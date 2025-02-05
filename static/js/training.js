@@ -84,13 +84,6 @@ async function detectDevice() {
 
 // 文件选择处理
 document.addEventListener('DOMContentLoaded', function() {
-    // 创建隐藏的文件输入元素
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.zip,.tar,.gz';
-    fileInput.style.display = 'none';
-    document.body.appendChild(fileInput);
-
     // 模型系列选择事件
     const modelSeriesSelect = document.getElementById('modelSeries');
     modelSeriesSelect.addEventListener('change', (e) => {
@@ -98,27 +91,18 @@ document.addEventListener('DOMContentLoaded', function() {
         updateVersionOptions(selectedSeries);
         updateTagOption(selectedSeries);
         updateSizeOptions(selectedSeries);
-        s
+        
         // 重置版本和大小选择
         document.getElementById('modelVersion').value = '';
         document.getElementById('modelTag').value = '';
         document.getElementById('modelSize').value = '';
     });
 
-    // 浏览按钮点击事件
+    // 浏览按钮点击事件 - 直接打开我们的自定义文件浏览器
     const browseBtn = document.querySelector('.browse-btn');
-    const datasetPathInput = document.getElementById('datasetPath');
-
     browseBtn.addEventListener('click', () => {
-        fileInput.click();
-    });
-
-    // 文件选择改变事件
-    fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            const file = e.target.files[0];
-            datasetPathInput.value = file.path || file.name;
-        }
+        // 直接打开我们的自定义文件浏览器
+        openFileBrowser();
     });
 
     // 表单提交处理
@@ -172,4 +156,86 @@ function updateTrainingStatus(data) {
             <p>${data.message}</p>
         </div>
     `;
-} 
+}
+
+// 文件浏览器相关变量
+let currentPath = '/';
+const modal = document.getElementById('fileBrowserModal');
+
+// 打开文件浏览器
+function openFileBrowser() {
+    modal.style.display = 'block';
+    loadDirectory(currentPath);
+}
+
+// 关闭文件浏览器
+function closeFileBrowser() {
+    modal.style.display = 'none';
+}
+
+// 加载目录内容
+async function loadDirectory(path) {
+    try {
+        const response = await fetch('/api/list-directory', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ path: path })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+            currentPath = data.current_path;
+            updateFileList(data);
+        } else {
+            alert(data.error || '加载目录失败');
+        }
+    } catch (error) {
+        console.error('加载目录失败:', error);
+        alert('加载目录失败');
+    }
+}
+
+// 更新文件列表显示
+function updateFileList(data) {
+    const fileList = document.getElementById('fileList');
+    const currentPathElement = document.getElementById('currentPath');
+    
+    currentPathElement.textContent = data.current_path;
+    fileList.innerHTML = '';
+    
+    // 添加文件夹项
+    data.items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'file-item folder';
+        div.innerHTML = `
+            <i class="fas fa-folder"></i>
+            <span>${item.name}</span>
+        `;
+        div.onclick = () => loadDirectory(item.path);
+        fileList.appendChild(div);
+    });
+}
+
+// 导航到上级目录
+function navigateUp() {
+    const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
+    loadDirectory(parentPath);
+}
+
+// 选择当前文件夹
+function selectCurrentFolder() {
+    document.getElementById('datasetPath').value = currentPath;
+    closeFileBrowser();
+}
+
+// 关闭模态框的点击事件
+window.onclick = function(event) {
+    if (event.target == modal) {
+        closeFileBrowser();
+    }
+}
+
+// 为关闭按钮添加事件监听
+document.querySelector('.close').onclick = closeFileBrowser; 

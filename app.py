@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import torch
 import os
+from pathlib import Path
 
 app = Flask(__name__)
 
@@ -46,7 +47,7 @@ def model_training():
             'num_classes': int(request.form.get('numClasses')),
             'labels': request.form.get('labels').split('\n')
         }
-        
+        print(training_config)
         # 验证数据集路径
         if not os.path.exists(training_config['dataset_path']):
             return jsonify({
@@ -54,7 +55,6 @@ def model_training():
                 'message': '数据集路径不存在',
                 'config': training_config
             }), 400
-        
         # 这里可以添加实际的训练逻辑
         return jsonify({
             'status': 'success',
@@ -79,6 +79,40 @@ def model_testing():
 @app.route('/development-tools')
 def development_tools():
     return render_template('development_tools.html')
+
+@app.route('/api/list-directory', methods=['POST'])
+def list_directory():
+    data = request.get_json()
+    path = data.get('path', '/')
+    
+    try:
+        # 确保路径安全
+        abs_path = os.path.abspath(path)
+        if not os.path.exists(abs_path):
+            return jsonify({'error': '路径不存在'}), 404
+            
+        items = []
+        # 列出目录内容
+        for item in os.scandir(abs_path):
+            if item.is_dir():  # 只显示文件夹
+                items.append({
+                    'name': item.name,
+                    'path': os.path.join(path, item.name),
+                    'type': 'folder',
+                    'modified': os.path.getmtime(item.path)
+                })
+        
+        # 按名称排序
+        items.sort(key=lambda x: x['name'].lower())
+        
+        return jsonify({
+            'current_path': path,
+            'items': items,
+            'parent_path': os.path.dirname(path) if path != '/' else None
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

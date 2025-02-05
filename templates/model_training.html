@@ -52,9 +52,9 @@
                 <label for="datasetPath">数据集路径</label>
                 <div class="file-input-container">
                     <input type="text" id="datasetPath" name="datasetPath" required readonly>
-                    <button type="button" class="browse-btn">浏览</button>
+                    <button type="button" class="browse-btn" onclick="openFileBrowser()">浏览</button>
                 </div>
-                <small class="help-text">支持的格式: .zip, .tar, .gz</small>
+                <small class="help-text">请选择数据集所在文件夹</small>
             </div>
 
             <div class="form-group">
@@ -91,6 +91,35 @@
         <h2>训练状态</h2>
         <div id="trainingProgress">
             <!-- 训练进度和状态将在这里动态显示 -->
+        </div>
+    </div>
+</div>
+
+<!-- 添加文件浏览器模态框 -->
+<div id="fileBrowserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>选择数据集文件夹</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="file-browser">
+                <div class="file-browser-header">
+                    <div class="current-path">
+                        <span id="currentPath">/</span>
+                    </div>
+                    <button class="nav-btn" onclick="navigateUp()">
+                        <i class="fas fa-arrow-up"></i> 返回上级
+                    </button>
+                </div>
+                <div class="file-list" id="fileList">
+                    <!-- 文件列表将通过JavaScript动态填充 -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" onclick="closeFileBrowser()">取消</button>
+            <button class="select-btn" onclick="selectCurrentFolder()">选择此文件夹</button>
         </div>
     </div>
 </div>
