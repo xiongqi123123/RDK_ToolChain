@@ -54,7 +54,16 @@
                     <input type="text" id="datasetPath" name="datasetPath" required readonly>
                     <button type="button" class="browse-btn" onclick="openFileBrowser()">浏览</button>
                 </div>
-                <small class="help-text">请选择数据集所在文件夹</small>
+                <small class="help-text">请选择数据集根目录，目录结构应为：
+                    <pre class="directory-structure">
+dataset_root/
+├── images/
+│   ├── train/  # 训练集图片
+│   └── val/    # 验证集图片（可选）
+└── labels/
+    ├── train/  # 训练集标签
+    └── val/    # 验证集标签（可选）</pre>
+                </small>
             </div>
 
             <div class="form-group">

@@ -384,4 +384,15 @@ input[readonly] {
 
 .select-btn:hover {
     background-color: var(--secondary-color);
+}
+
+.directory-structure {
+    background-color: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    white-space: pre;
+    overflow-x: auto;
 } 
