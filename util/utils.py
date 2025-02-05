@@ -24,14 +24,15 @@ def generate_dataset_yaml(dataset_path, num_classes, labels):
         'train': train_path,
         'val': val_path,
         'nc': num_classes,  # number of classes
-        'names': labels     # class names
+        'names': labels if isinstance(labels, list) else [labels]  # class names
     }
     
     # 保存yaml文件
-    yaml_path = os.path.join('models/model_train/YOLO/yolov5_v2.0/data', 'custom_dataset.yaml')
+    base_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+    yaml_path = os.path.join(base_dir, 'models/model_train/YOLO/yolov5_v2.0/data', 'custom_dataset.yaml')
     os.makedirs(os.path.dirname(yaml_path), exist_ok=True)
     
     with open(yaml_path, 'w', encoding='utf-8') as f:
-        yaml.dump(yaml_config, f, allow_unicode=True)
+        yaml.dump(yaml_config, f, allow_unicode=True, default_flow_style=None)
     
     return yaml_path

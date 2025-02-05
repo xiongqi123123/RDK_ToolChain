@@ -2,9 +2,9 @@
 const modelConfigs = {
     yolo: {
         versions: [
-            { value: "v5", label: "YOLOv5" },
-            { value: "v8", label: "YOLOv8" },
-            { value: "v11", label: "YOLO11"}
+            { value: "yolov5", label: "YOLOv5" },
+            { value: "yolov8", label: "YOLOv8" },
+            { value: "yolov11", label: "YOLO11"}
         ],
         tag: [
             { value: "v2.0", label: "Yolov5-V2.0" },
@@ -141,21 +141,202 @@ document.addEventListener('DOMContentLoaded', function() {
     detectDevice();
 });
 
-// 更新训练状态
+// 训练状态管理
+let trainingStatus = {
+    isTraining: false,
+    currentEpoch: 0,
+    totalEpochs: 0
+};
+
+// 更新训练状态显示
 function updateTrainingStatus(data) {
     const trainingProgress = document.getElementById('trainingProgress');
+    const trainingControls = document.querySelector('.training-controls');
     
-    // 创建或更新状态显示
-    trainingProgress.innerHTML = `
-        <div class="status-item">
-            <h3>训练配置</h3>
-            <pre>${JSON.stringify(data.config, null, 2)}</pre>
-        </div>
-        <div class="status-item">
-            <h3>状态</h3>
-            <p>${data.message}</p>
-        </div>
-    `;
+    if (data.status === 'success') {
+        // 更新训练状态
+        trainingStatus.isTraining = true;
+        trainingStatus.totalEpochs = data.config.epochs;
+        
+        // 显示训练配置和状态
+        trainingProgress.innerHTML = `
+            <div class="status-item">
+                <h3>
+                    <span>训练状态</span>
+                    <span class="status-badge running">正在运行</span>
+                </h3>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: 0%">0%</div>
+                </div>
+                <p>当前轮次: 0/${data.config.epochs}</p>
+            </div>
+            <div class="status-item">
+                <h3>训练配置</h3>
+                <pre>${JSON.stringify(data.config, null, 2)}</pre>
+            </div>
+            <div class="status-item">
+                <h3>运行日志</h3>
+                <pre class="log-output"></pre>
+            </div>
+        `;
+        
+        // 显示停止按钮
+        trainingControls.style.display = 'flex';
+        
+        // 开始轮询训练状态
+        pollTrainingStatus();
+    } else {
+        // 显示错误信息
+        trainingProgress.innerHTML = `
+            <div class="status-item">
+                <h3>
+                    <span>错误</span>
+                    <span class="status-badge stopped">失败</span>
+                </h3>
+                <p class="error-message">${data.message}</p>
+                ${data.error ? `<pre class="error-details">${data.error}</pre>` : ''}
+            </div>
+        `;
+        trainingControls.style.display = 'none';
+    }
+}
+
+// 轮询训练状态
+function pollTrainingStatus() {
+    if (!trainingStatus.isTraining) return;
+    
+    fetch('/api/training-status')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('收到训练状态数据:', data);  // 调试日志
+            
+            // 更新训练状态
+            if (data.status === 'running') {
+                // 更新状态标签
+                const statusBadge = document.querySelector('.status-badge');
+                statusBadge.className = 'status-badge running';
+                statusBadge.textContent = '正在运行';
+                
+                // 更新进度条和轮次
+                const progressBar = document.querySelector('.progress-bar');
+                const currentEpoch = document.querySelector('.status-item p');
+                console.log('当前epoch:', data.current_epoch);  // 调试日志
+                console.log('总epoch:', trainingStatus.totalEpochs);  // 调试日志
+                
+                if (data.current_epoch !== undefined && trainingStatus.totalEpochs) {
+                    const progress = (data.current_epoch / trainingStatus.totalEpochs) * 100;
+                    console.log('计算的进度:', progress);  // 调试日志
+                    
+                    progressBar.style.transition = 'width 0.5s ease-in-out';
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.textContent = `${progress.toFixed(1)}%`;
+                    currentEpoch.textContent = `当前轮次: ${data.current_epoch}/${trainingStatus.totalEpochs}`;
+                }
+                
+                // 更新日志
+                const logOutput = document.querySelector('.log-output');
+                if (data.stdout) {
+                    const lines = data.stdout.split('\n');
+                    lines.forEach(line => {
+                        if (line.trim()) {
+                            const stdoutDiv = document.createElement('div');
+                            stdoutDiv.className = 'stdout';
+                            stdoutDiv.textContent = line;
+                            logOutput.appendChild(stdoutDiv);
+                        }
+                    });
+                }
+                if (data.stderr) {
+                    const lines = data.stderr.split('\n');
+                    lines.forEach(line => {
+                        if (line.trim()) {
+                            const stderrDiv = document.createElement('div');
+                            stderrDiv.className = 'stderr';
+                            stderrDiv.textContent = line;
+                            logOutput.appendChild(stderrDiv);
+                        }
+                    });
+                }
+                
+                // 自动滚动到底部
+                logOutput.scrollTop = logOutput.scrollHeight;
+                
+                // 继续轮询
+                setTimeout(pollTrainingStatus, 1000);
+            } else if (data.status === 'completed') {
+                updateTrainingComplete(data);
+            } else if (data.status === 'stopped') {
+                updateTrainingStopped(data);
+            }
+        })
+        .catch(error => {
+            console.error('获取训练状态失败:', error);
+            // 如果是404错误，说明后端API还没准备好，等待更长时间
+            const retryTime = error.message.includes('404') ? 5000 : 1000;
+            setTimeout(pollTrainingStatus, retryTime);
+        });
+}
+
+// 更新训练完成状态
+function updateTrainingComplete(data) {
+    const trainingProgress = document.getElementById('trainingProgress');
+    const trainingControls = document.querySelector('.training-controls');
+    
+    trainingStatus.isTraining = false;
+    trainingControls.style.display = 'none';
+    
+    const statusBadge = document.querySelector('.status-badge');
+    statusBadge.className = 'status-badge completed';
+    statusBadge.textContent = '已完成';
+}
+
+// 更新训练停止状态
+function updateTrainingStopped(data) {
+    const trainingProgress = document.getElementById('trainingProgress');
+    const trainingControls = document.querySelector('.training-controls');
+    
+    trainingStatus.isTraining = false;
+    trainingControls.style.display = 'none';
+    
+    const statusBadge = document.querySelector('.status-badge');
+    statusBadge.className = 'status-badge stopped';
+    statusBadge.textContent = '已停止';
+}
+
+// 停止训练
+function stopTraining() {
+    if (!trainingStatus.isTraining) return;
+    
+    if (!confirm('确定要停止训练吗？')) return;
+    
+    fetch('/api/stop-training', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                updateTrainingStopped(data);
+            } else {
+                alert('停止训练失败: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('停止训练失败:', error);
+            alert('停止训练失败，请重试\n' + error.message);
+        });
 }
 
 // 文件浏览器相关变量

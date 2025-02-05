@@ -207,6 +207,9 @@ main {
 .status-item h3 {
     color: var(--primary-color);
     margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .status-item pre {
@@ -215,6 +218,80 @@ main {
     border-radius: 4px;
     overflow-x: auto;
     font-size: 0.9rem;
+}
+
+.training-controls {
+    margin-top: 1rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.stop-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.stop-btn:hover {
+    background-color: #c82333;
+}
+
+.stop-btn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* 状态标签样式 */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: bold;
+}
+
+.status-badge.running {
+    background-color: #28a745;
+    color: white;
+}
+
+.status-badge.stopped {
+    background-color: #dc3545;
+    color: white;
+}
+
+.status-badge.completed {
+    background-color: #17a2b8;
+    color: white;
+}
+
+/* 进度条样式 */
+.progress-container {
+    margin: 1rem 0;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 20px;
+    background-color: var(--primary-color);
+    width: 0;
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.875rem;
 }
 
 /* 禁用的选项样式 */
@@ -395,4 +472,45 @@ input[readonly] {
     margin-top: 0.5rem;
     white-space: pre;
     overflow-x: auto;
+}
+
+/* 日志输出样式 */
+.log-output {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    padding: 1rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 0.5rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.stdout {
+    color: #d4d4d4;
+}
+
+.stderr {
+    color: #f14c4c;
+}
+
+.error-message {
+    color: #dc3545;
+    font-weight: bold;
+    margin: 0.5rem 0;
+}
+
+.error-details {
+    background-color: #1e1e1e;
+    color: #f14c4c;
+    padding: 1rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
 } 

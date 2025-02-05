@@ -3,8 +3,283 @@ import torch
 import os
 from pathlib import Path
 from util.utils import generate_dataset_yaml
+import subprocess
+import signal
+import threading
+from typing import Dict, Any, Optional, List
+from dataclasses import dataclass
+import fcntl
 
 app = Flask(__name__)
+
+@dataclass
+class TrainingConfig:
+    model_series: str
+    model_version: str
+    model_tag: str
+    model_size: str
+    device: str
+    dataset_path: str
+    epochs: int
+    batch_size: int
+    num_classes: int
+    labels: List[str]
+
+    @classmethod
+    def from_form(cls, form_data) -> 'TrainingConfig':
+        """从表单数据创建配置对象"""
+        try:
+            return cls(
+                model_series=form_data.get('modelSeries', ''),
+                model_version=form_data.get('modelVersion', ''),
+                model_tag=form_data.get('modelTag', ''),
+                model_size=form_data.get('modelSize', ''),
+                device=form_data.get('device', 'cpu'),
+                dataset_path=form_data.get('datasetPath', ''),
+                epochs=int(form_data.get('epochs', 0)),
+                batch_size=int(form_data.get('batchSize', 0)),
+                num_classes=int(form_data.get('numClasses', 0)),
+                labels=form_data.get('labels', '').strip().split('\n') if form_data.get('labels') else []
+            )
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"配置参数无效: {str(e)}")
+
+    def validate(self):
+        """验证配置参数"""
+        if not all([self.model_series, self.model_version, self.model_tag, self.model_size]):
+            raise ValueError("模型参数不完整")
+        
+        if not self.dataset_path:
+            raise ValueError("数据集路径不能为空")
+        
+        if self.epochs <= 0:
+            raise ValueError("训练轮次必须大于0")
+        
+        if self.batch_size <= 0:
+            raise ValueError("batch_size必须大于0")
+        
+        if self.num_classes <= 0:
+            raise ValueError("类别数量必须大于0")
+        
+        if len(self.labels) != self.num_classes:
+            raise ValueError(f"标签数量({len(self.labels)})与类别数量({self.num_classes})不匹配")
+
+class TrainingProcess:
+    def __init__(self):
+        self.process: Optional[subprocess.Popen] = None
+        self.status = "stopped"
+        self.error = None
+        self._lock = threading.Lock()
+
+    def start(self, config: TrainingConfig, yaml_path: str):
+        """启动训练进程"""
+        with self._lock:
+            if self.process and self.process.poll() is None:
+                raise RuntimeError("已有训练进程在运行")
+
+            try:
+                base_dir = Path(__file__).parent.absolute()
+                base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}_{config.model_tag}"
+                
+                train_script = base_path / "train.py"
+                model_config = base_path / "models" / f"yolov5{config.model_size}.yaml"
+                
+                # 检查文件是否存在
+                if not train_script.exists():
+                    raise FileNotFoundError(f"训练脚本不存在: {train_script}")
+                if not model_config.exists():
+                    raise FileNotFoundError(f"模型配置文件不存在: {model_config}")
+                if not Path(yaml_path).exists():
+                    raise FileNotFoundError(f"数据集配置文件不存在: {yaml_path}")
+                
+                # 切换到训练脚本所在目录
+                os.chdir(base_path)
+                
+                # 获取相对路径
+                rel_model_config = os.path.relpath(model_config, base_path)
+                rel_yaml_path = os.path.relpath(yaml_path, base_path)
+                
+                # 设置设备参数
+                device = "0" if config.device == 'gpu' else "cpu"
+                
+                train_cmd = [
+                    "python",
+                    "train.py",
+                    "--cfg", rel_model_config,
+                    "--data", rel_yaml_path,
+                    "--epochs", str(config.epochs),
+                    "--batch-size", str(config.batch_size),
+                    "--img", "640",
+                    "--device", device
+                ]
+                
+                print(f"开始训练: {' '.join(train_cmd)}")
+                
+                # 创建进程
+                self.process = subprocess.Popen(
+                    train_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True,
+                    bufsize=1,  # 行缓冲
+                    env=dict(os.environ, PYTHONUNBUFFERED="1"),  # 禁用 Python 输出缓冲
+                    cwd=base_path
+                )
+
+                # 设置非阻塞模式
+                for pipe in [self.process.stdout, self.process.stderr]:
+                    if pipe:
+                        fd = pipe.fileno()
+                        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+                        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+                self.status = "running"
+                self.error = None
+                
+            except Exception as e:
+                self.status = "error"
+                self.error = str(e)
+                raise
+
+    def stop(self):
+        """停止训练进程"""
+        with self._lock:
+            if not self.process:
+                return
+            
+            try:
+                # 先尝试优雅地停止
+                self.process.send_signal(signal.SIGINT)
+                try:
+                    self.process.wait(timeout=30)
+                except subprocess.TimeoutExpired:
+                    # 如果超时，强制终止
+                    self.process.terminate()
+                    self.process.wait()
+                
+                self.status = "stopped"
+                self.process = None
+                
+            except Exception as e:
+                self.error = str(e)
+                raise
+
+    def get_status(self) -> Dict[str, Any]:
+        """获取训练状态"""
+        with self._lock:
+            if not self.process:
+                return {
+                    'status': self.status,
+                    'message': '没有正在进行的训练',
+                    'error': self.error
+                }
+            
+            return_code = self.process.poll()
+            
+            # 非阻塞方式读取输出
+            stdout_data = ""
+            stderr_data = ""
+            
+            try:
+                # 读取所有可用输出
+                if self.process.stdout:
+                    try:
+                        while True:
+                            line = self.process.stdout.readline()
+                            if not line:
+                                break
+                            stdout_data += line
+                    except (IOError, OSError):
+                        pass
+
+                if self.process.stderr:
+                    try:
+                        while True:
+                            line = self.process.stderr.readline()
+                            if not line:
+                                break
+                            stderr_data += line
+                    except (IOError, OSError):
+                        pass
+                            
+            except Exception as e:
+                print(f"读取输出时发生错误: {str(e)}")
+            
+            # 解析训练进度
+            current_epoch = 0
+            if stdout_data:
+                print("\n=== 开始解析输出数据 ===")
+                print("原始输出数据:")
+                print(stdout_data)
+                print("===================")
+                
+                lines = stdout_data.split('\n')
+                print(f"总行数: {len(lines)}")
+                
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+                        
+                    print(f"处理行: {line}")
+                    
+                    # 检查是否是训练进度行，格式示例:
+                    # "      1/100     10.6G   0.08338  0.076   0   0.1594   316   640"
+                    # 或者 "Epoch    GPU_mem   box_loss   obj_loss   cls_loss  Instances  Size"
+                    if "Epoch" in line:  # 跳过表头
+                        continue
+                        
+                    parts = line.split()
+                    if len(parts) >= 7:  # 确保有足够的列
+                        try:
+                            # 查找包含斜杠的部分
+                            for part in parts:
+                                if '/' in part:
+                                    current, total = map(int, part.split('/'))
+                                    if total > 0 and current > 0:  # 确保是有效的epoch数据
+                                        current_epoch = current
+                                        print(f"找到当前epoch: {current_epoch}")
+                                        break
+                        except ValueError:
+                            continue
+            
+            print(f"最终解析结果 - current_epoch: {current_epoch}")
+            print("=== 解析结束 ===\n")
+            
+            if return_code is None:
+                # 进程仍在运行
+                return {
+                    'status': 'running',
+                    'message': '训练进行中',
+                    'stdout': stdout_data,
+                    'stderr': stderr_data,
+                    'current_epoch': current_epoch,
+                    'error': None
+                }
+            elif return_code == 0:
+                # 进程正常结束
+                return {
+                    'status': 'completed',
+                    'message': '训练已完成',
+                    'stdout': stdout_data,
+                    'stderr': stderr_data,
+                    'current_epoch': current_epoch,
+                    'error': None
+                }
+            else:
+                # 进程异常结束
+                error_msg = stderr_data if stderr_data else f'训练异常终止，返回码：{return_code}'
+                return {
+                    'status': 'stopped',
+                    'message': '训练异常终止',
+                    'error': error_msg,
+                    'stdout': stdout_data,
+                    'stderr': stderr_data,
+                    'current_epoch': current_epoch
+                }
+
+# 全局训练进程管理器
+training_process = TrainingProcess()
 
 @app.route('/')
 def index():
@@ -33,77 +308,49 @@ def detect_device():
         'gpu_info': gpu_info
     })
 
-
-
 @app.route('/model-training', methods=['GET', 'POST'])
 def model_training():
-    if request.method == 'POST':
-        try:
-            # 获取表单数据
-            training_config = {
-                'model_series': request.form.get('modelSeries'),
-                'model_version': request.form.get('modelVersion'),
-                'model_tag': request.form.get('modelTag'),
-                'model_size': request.form.get('modelSize'),
-                'device': request.form.get('device'),
-                'dataset_path': request.form.get('datasetPath'),
-                'epochs': int(request.form.get('epochs')),
-                'batch_size': int(request.form.get('batchSize')),
-                'num_classes': int(request.form.get('numClasses')),
-                'labels': request.form.get('labels').strip().split('\n')
-            }
-            
-            # 验证标签数量是否与类别数量匹配
-            if len(training_config['labels']) != training_config['num_classes']:
-                return jsonify({
-                    'status': 'error',
-                    'message': f"标签数量({len(training_config['labels'])})与类别数量({training_config['num_classes']})不匹配",
-                    'config': training_config
-                }), 400
-            
-            # 生成数据集yaml配置文件
-            try:
-                yaml_path = generate_dataset_yaml(
-                    training_config['dataset_path'],
-                    training_config['num_classes'],
-                    training_config['labels']
-                )
-            except ValueError as e:
-                return jsonify({
-                    'status': 'error',
-                    'message': str(e),
-                    'config': training_config
-                }), 400
-            
-            # 构建训练命令
-            model_path = f"models/model_train/YOLO/{training_config['model_version']}_{training_config['model_tag']}"
-            train_cmd = f"python {model_path}/train.py"
-            train_cmd += f" --cfg {model_path}/models/yolov5{training_config['model_size']}.yaml"
-            train_cmd += f" --data {yaml_path}"
-            train_cmd += f" --epochs {training_config['epochs']}"
-            train_cmd += f" --batch-size {training_config['batch_size']}"
-            train_cmd += f" --img 640"
-            train_cmd += f" --device {training_config['device']}"
-            
-            # 执行训练命令
-            print(f"执行训练命令: {train_cmd}")
-            os.system(train_cmd)
-            
-            return jsonify({
-                'status': 'success',
-                'message': '训练配置已接收，即将开始训练',
-                'config': training_config,
-                'yaml_path': yaml_path
-            })
-            
-        except Exception as e:
-            return jsonify({
-                'status': 'error',
-                'message': f'训练配置出错: {str(e)}',
-                'config': training_config if 'training_config' in locals() else None
-            }), 500
+    if request.method == 'GET':
+        return render_template('model_training.html')
     
-    return render_template('model_training.html')
+    try:
+        # 1. 创建并验证训练配置
+        config = TrainingConfig.from_form(request.form)
+        config.validate()
+        
+        # 2. 生成数据集配置
+        yaml_path = generate_dataset_yaml(
+            config.dataset_path,
+            config.num_classes,
+            config.labels
+        )
+        
+        # 3. 启动训练进程（异步）
+        def run_training():
+            try:
+                training_process.start(config, yaml_path)
+                if training_process.process:
+                    training_process.process.wait()
+            except Exception as e:
+                print(f"训练过程出错: {str(e)}")
+        
+        training_thread = threading.Thread(target=run_training)
+        training_thread.start()
+        
+        # 4. 返回成功响应
+        return jsonify({
+            'status': 'success',
+            'message': '训练任务已启动',
+            'config': vars(config),
+            'yaml_path': yaml_path
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'error': str(e)
+        }), 500
 
 @app.route('/model-quantization')
 def model_quantization():
@@ -154,6 +401,24 @@ def list_directory():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/training-status')
+def get_training_status():
+    return jsonify(training_process.get_status())
+
+@app.route('/api/stop-training', methods=['POST'])
+def stop_training():
+    try:
+        training_process.stop()
+        return jsonify({
+            'status': 'success',
+            'message': '训练已停止'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'停止训练失败: {str(e)}'
+        })
 
 if __name__ == '__main__':
     app.run(debug=True)
