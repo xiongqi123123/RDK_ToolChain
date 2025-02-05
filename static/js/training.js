@@ -1,59 +1,21 @@
 // 模型配置数据
 const modelConfigs = {
-    resnet: {
-        versions: [
-            { value: "18", label: "ResNet-18" },
-            { value: "34", label: "ResNet-34" },
-            { value: "50", label: "ResNet-50" },
-            { value: "101", label: "ResNet-101" },
-            { value: "152", label: "ResNet-152" }
-        ],
-        sizes: [
-            { value: "224", label: "224x224" },
-            { value: "384", label: "384x384" },
-            { value: "448", label: "448x448" }
-        ]
-    },
     yolo: {
         versions: [
-            { value: "v2", label: "YOLOv2" },
-            { value: "v3", label: "YOLOv3" },
-            { value: "v4", label: "YOLOv4" },
             { value: "v5", label: "YOLOv5" },
-            { value: "v6", label: "YOLOv6" },
-            { value: "v7", label: "YOLOv7" },
-            { value: "v8", label: "YOLOv8" }
+            { value: "v8", label: "YOLOv8" },
+            { value: "v11", label: "YOLO11"}
         ],
-        sizes: [
-            { value: "tiny", label: "Tiny (最小)" },
-            { value: "small", label: "Small (小型)" },
-            { value: "medium", label: "Medium (中型)" },
-            { value: "large", label: "Large (大型)" },
-            { value: "xlarge", label: "XLarge (超大)" }
-        ]
-    },
-    vgg: {
-        versions: [
-            { value: "11", label: "VGG-11" },
-            { value: "13", label: "VGG-13" },
-            { value: "16", label: "VGG-16" },
-            { value: "19", label: "VGG-19" }
+        tag: [
+            { value: "v2.0", label: "Yolov5-V2.0" },
         ],
+
         sizes: [
-            { value: "224", label: "224x224" },
-            { value: "384", label: "384x384" }
-        ]
-    },
-    mobilenet: {
-        versions: [
-            { value: "v1", label: "MobileNet V1" },
-            { value: "v2", label: "MobileNet V2" },
-            { value: "v3", label: "MobileNet V3" }
-        ],
-        sizes: [
-            { value: "small", label: "Small (小型)" },
-            { value: "medium", label: "Medium (中型)" },
-            { value: "large", label: "Large (大型)" }
+            { value: "s", label: "s" },
+            { value: "n", label: "n" },
+            { value: "m", label: "m" },
+            { value: "l", label: "l" },
+            { value: "x", label: "x" }
         ]
     }
 };
@@ -70,6 +32,20 @@ function updateVersionOptions(modelSeries) {
         option.textContent = version.label;
         versionSelect.appendChild(option);
     });
+}
+
+function updateTagOption(modelSeries){
+    const tagSelect = document.getElementById('modelTag');
+    const tags = modelConfigs[modelSeries]?.tag || [];
+    
+    tagSelect.innerHTML = '<option value="">请选择模型Tag</option>';
+    tags.forEach(tag => {
+        const option = document.createElement('option');
+        option.value = tag.value;
+        option.textContent = tag.label;
+        tagSelect.appendChild(option);
+    });
+
 }
 
 // 更新大小选项
@@ -120,10 +96,12 @@ document.addEventListener('DOMContentLoaded', function() {
     modelSeriesSelect.addEventListener('change', (e) => {
         const selectedSeries = e.target.value;
         updateVersionOptions(selectedSeries);
+        updateTagOption(selectedSeries);
         updateSizeOptions(selectedSeries);
-        
+        s
         // 重置版本和大小选择
         document.getElementById('modelVersion').value = '';
+        document.getElementById('modelTag').value = '';
         document.getElementById('modelSize').value = '';
     });
 

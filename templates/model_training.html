@@ -8,11 +8,8 @@
             <div class="form-group">
                 <label for="modelSeries">模型系列</label>
                 <select id="modelSeries" name="modelSeries" required>
-                    <option value="">请选择模型系列</option>
-                    <option value="resnet">ResNet (残差网络)</option>
+                    <option value="">请先选择模型系列</option>
                     <option value="yolo">YOLO (目标检测)</option>
-                    <option value="vgg">VGG (特征提取)</option>
-                    <option value="mobilenet">MobileNet (轻量级网络)</option>
                 </select>
                 <small class="help-text">不同模型系列适用于不同的任务场景</small>
             </div>
@@ -24,6 +21,15 @@
                 </select>
                 <small class="help-text">选择模型系列后可选择对应版本</small>
             </div>
+
+            <div class="form-group">
+                <label for="modelTag">模型Tag</label>
+                <select id="modelTag" name="modelTag" required>
+                    <option value="">请先选择模型版本</option>
+                </select>
+                <small class="help-text">选择模型版本后可选择对应Tag</small>
+            </div>
+            
 
             <div class="form-group">
                 <label for="modelSize">模型大小</label>
