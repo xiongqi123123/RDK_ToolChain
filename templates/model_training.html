@@ -1,0 +1,93 @@
+{% extends "index.html" %}
+
+{% block content %}
+<div class="training-container">
+    <div class="training-form">
+        <h2>模型训练配置</h2>
+        <form id="trainingForm" action="{{ url_for('model_training') }}" method="POST">
+            <div class="form-group">
+                <label for="modelSeries">模型系列</label>
+                <select id="modelSeries" name="modelSeries" required>
+                    <option value="">请选择模型系列</option>
+                    <option value="resnet">ResNet (残差网络)</option>
+                    <option value="yolo">YOLO (目标检测)</option>
+                    <option value="vgg">VGG (特征提取)</option>
+                    <option value="mobilenet">MobileNet (轻量级网络)</option>
+                </select>
+                <small class="help-text">不同模型系列适用于不同的任务场景</small>
+            </div>
+
+            <div class="form-group">
+                <label for="modelVersion">模型版本</label>
+                <select id="modelVersion" name="modelVersion" required>
+                    <option value="">请先选择模型系列</option>
+                </select>
+                <small class="help-text">选择模型系列后可选择对应版本</small>
+            </div>
+
+            <div class="form-group">
+                <label for="modelSize">模型大小</label>
+                <select id="modelSize" name="modelSize" required>
+                    <option value="">请先选择模型系列</option>
+                </select>
+                <small class="help-text">不同大小的模型在性能和资源占用上有所区别</small>
+            </div>
+
+            <div class="form-group">
+                <label for="device">训练设备</label>
+                <select id="device" name="device" required>
+                    <option value="cpu">CPU</option>
+                    <option value="gpu">GPU</option>
+                </select>
+                <small class="device-info"></small>
+            </div>
+
+            <div class="form-group">
+                <label for="datasetPath">数据集路径</label>
+                <div class="file-input-container">
+                    <input type="text" id="datasetPath" name="datasetPath" required readonly>
+                    <button type="button" class="browse-btn">浏览</button>
+                </div>
+                <small class="help-text">支持的格式: .zip, .tar, .gz</small>
+            </div>
+
+            <div class="form-group">
+                <label for="epochs">训练轮次 (Epoch)</label>
+                <input type="number" id="epochs" name="epochs" min="1" value="100" required>
+                <small class="help-text">建议值：简单任务 50-100，复杂任务 100-300</small>
+            </div>
+
+            <div class="form-group">
+                <label for="batchSize">Batch 大小</label>
+                <input type="number" id="batchSize" name="batchSize" min="1" value="32" required>
+                <small class="help-text">建议值：GPU训练 32-128，CPU训练 8-32</small>
+            </div>
+
+            <div class="form-group">
+                <label for="numClasses">类别数量</label>
+                <input type="number" id="numClasses" name="numClasses" min="1" required>
+                <small class="help-text">需要分类/检测的目标类别数量</small>
+            </div>
+
+            <div class="form-group">
+                <label for="labels">标签名称</label>
+                <textarea id="labels" name="labels" placeholder="每行输入一个标签名称" required></textarea>
+                <small class="help-text">每行输入一个标签名称，数量需要与类别数量相匹配</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">开始训练</button>
+                <button type="reset" class="reset-btn">重置参数</button>
+            </div>
+        </form>
+    </div>
+    <div class="training-status">
+        <h2>训练状态</h2>
+        <div id="trainingProgress">
+            <!-- 训练进度和状态将在这里动态显示 -->
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/training.js') }}"></script>
+{% endblock %}

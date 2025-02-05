@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模型一站式开发工具</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>模型一站式开发工具</h1>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('model_training') }}">模型训练</a></li>
+                <li><a href="{{ url_for('model_quantization') }}">模型量化</a></li>
+                <li><a href="{{ url_for('model_conversion') }}">模型转换</a></li>
+                <li><a href="{{ url_for('model_testing') }}">模型测试</a></li>
+                <li><a href="{{ url_for('development_tools') }}">开发工具</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+</body>
+</html> 
