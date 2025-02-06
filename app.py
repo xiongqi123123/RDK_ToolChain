@@ -254,10 +254,45 @@ def model_conversion():
         }), 500
 
 
-@app.route('/model-testing')
+@app.route('/model_testing')
 def model_testing():
-    """模型测试页面"""
     return render_template('model_testing.html')
+
+@app.route('/browse')
+def browse_files():
+    path = request.args.get('path', '/')
+    try:
+        items = []
+        for entry in os.scandir(path):
+            item = {
+                'name': entry.name,
+                'path': os.path.join(path, entry.name),
+                'type': 'directory' if entry.is_dir() else 'file'
+            }
+            items.append(item)
+        return jsonify(sorted(items, key=lambda x: (x['type'] == 'file', x['name'])))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/start_testing', methods=['POST'])
+def start_testing():
+    data = request.get_json()
+    model_path = data.get('model_path')
+    image_path = data.get('image_path')
+    
+    if not model_path or not image_path:
+        return jsonify({'error': '请提供模型文件和测试图片路径'}), 400
+        
+    if not os.path.exists(model_path) or not os.path.exists(image_path):
+        return jsonify({'error': '文件不存在'}), 404
+        
+    # 这里先返回成功,实际的测试逻辑将在后端实现
+    return jsonify({'status': 'success'})
+
+@app.route('/stop_testing', methods=['POST'])
+def stop_testing():
+    # 这里先返回成功,实际的停止逻辑将在后端实现
+    return jsonify({'status': 'success'})
 
 @app.route('/model-detection', methods=['GET', 'POST'])
 def model_detection():

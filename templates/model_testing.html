@@ -1,0 +1,85 @@
+{% extends "index.html" %}
+
+{% block content %}
+<div class="training-container">
+    <div class="training-form">
+        <h2>模型测试配置</h2>
+        <form id="testingForm" action="{{ url_for('model_testing') }}" method="POST">
+            <div class="form-group">
+                <label for="modelPath">模型文件</label>
+                <div class="file-input-container">
+                    <input type="text" id="modelPath" name="modelPath" required readonly>
+                    <button type="button" class="browse-btn" onclick="openModelBrowser()">浏览</button>
+                </div>
+                <small class="help-text">请选择需要测试的模型文件(.bin格式)</small>
+            </div>
+
+            <div class="form-group">
+                <label for="imagePath">测试图片</label>
+                <div class="file-input-container">
+                    <input type="text" id="imagePath" name="imagePath" required readonly>
+                    <button type="button" class="browse-btn" onclick="openImageBrowser()">浏览</button>
+                </div>
+                <small class="help-text">请选择需要测试的图片文件(支持jpg、png格式)</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">开始测试</button>
+                <button type="reset" class="reset-btn">重置参数</button>
+            </div>
+        </form>
+    </div>
+    <div class="training-status">
+        <h2>测试状态</h2>
+        <div id="testingProgress">
+            <!-- 测试进度和状态将在这里动态显示 -->
+        </div>
+        <div class="testing-controls" style="display: none;">
+            <button type="button" class="stop-btn" onclick="stopTesting()">
+                <i class="fas fa-stop"></i> 停止测试
+            </button>
+        </div>
+        <!-- 添加测试结果显示区域 -->
+        <div id="testResult" style="display: none;">
+            <h3>测试结果</h3>
+            <div id="resultImage" style="margin-top: 10px;">
+                <img id="originalImage" src="" alt="原始图片" style="max-width: 45%; margin-right: 5%;">
+                <img id="processedImage" src="" alt="处理后图片" style="max-width: 45%;">
+            </div>
+            <div id="detectionInfo" class="log-output" style="margin-top: 20px;">
+                <!-- 检测信息将在这里显示 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加文件浏览器模态框 -->
+<div id="fileBrowserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="browserTitle">选择文件</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="file-browser">
+                <div class="file-browser-header">
+                    <div class="current-path">
+                        <span id="currentPath">/</span>
+                    </div>
+                    <button class="nav-btn" onclick="navigateUp()">
+                        <i class="fas fa-arrow-up"></i> 返回上级
+                    </button>
+                </div>
+                <div class="file-list" id="fileList">
+                    <!-- 文件列表将通过JavaScript动态填充 -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" onclick="closeFileBrowser()">取消</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/testing.js') }}"></script>
+{% endblock %}
