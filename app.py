@@ -205,42 +205,45 @@ class TrainingProcess:
             except Exception as e:
                 print(f"读取输出时发生错误: {str(e)}")
             
+            # 打印完整的输出内容
+            print("\n========== 完整输出内容 ==========")
+            print("标准输出:")
+            print(stdout_data)
+            print("\n标准错误:")
+            print(stderr_data)
+            print("================================\n")
+            
             # 解析训练进度
             current_epoch = 0
-            if stdout_data:
-                print("\n=== 开始解析输出数据 ===")
-                print("原始输出数据:")
-                print(stdout_data)
-                print("===================")
-                
-                lines = stdout_data.split('\n')
+            if stderr_data:  # 从stderr中解析
+                lines = stderr_data.split('\n')
                 print(f"总行数: {len(lines)}")
                 
-                for line in lines:
+                for i, line in enumerate(lines):
                     line = line.strip()
                     if not line:
                         continue
                         
-                    print(f"处理行: {line}")
+                    print(f"第{i+1}行: {line}")
                     
-                    # 检查是否是训练进度行，格式示例:
-                    # "      1/100     10.6G   0.08338  0.076   0   0.1594   316   640"
-                    # 或者 "Epoch    GPU_mem   box_loss   obj_loss   cls_loss  Instances  Size"
-                    if "Epoch" in line:  # 跳过表头
+                    # 跳过表头行
+                    if "Epoch" in line:
                         continue
                         
+                    # 检查是否是训练进度行
                     parts = line.split()
-                    if len(parts) >= 7:  # 确保有足够的列
+                    if len(parts) >= 7:  # 训练输出行通常有7列或更多
                         try:
-                            # 查找包含斜杠的部分
-                            for part in parts:
-                                if '/' in part:
-                                    current, total = map(int, part.split('/'))
-                                    if total > 0 and current > 0:  # 确保是有效的epoch数据
-                                        current_epoch = current
-                                        print(f"找到当前epoch: {current_epoch}")
-                                        break
-                        except ValueError:
+                            # 第一部分应该是 "1/99" 这样的格式
+                            first_part = parts[0]
+                            if '/' in first_part:
+                                current, total = map(int, first_part.split('/'))
+                                if total > 0:  # 确保是有效的epoch数据
+                                    current_epoch = current
+                                    print(f"找到当前epoch: {current_epoch}/{total}")
+                                    break  # 找到最新的epoch就可以退出了
+                        except Exception as e:
+                            print(f"解析行时出错: {str(e)}, 行内容: {line}")
                             continue
             
             print(f"最终解析结果 - current_epoch: {current_epoch}")
