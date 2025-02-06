@@ -1,0 +1,70 @@
+{% extends "index.html" %}
+
+{% block content %}
+<div class="training-container">
+    <div class="training-form">
+        <h2>模型检测配置</h2>
+        <form id="detectionForm" action="{{ url_for('model_detection') }}" method="POST">
+            <div class="form-group">
+                <label for="modelPath">模型文件</label>
+                <div class="file-input-container">
+                    <input type="text" id="modelPath" name="modelPath" required readonly>
+                    <button type="button" class="browse-btn" onclick="openFileBrowser()">浏览</button>
+                </div>
+                <small class="help-text">请选择需要检测的模型文件(.bin格式)</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">开始检测</button>
+                <button type="reset" class="reset-btn">重置参数</button>
+            </div>
+        </form>
+    </div>
+    <div class="training-status">
+        <h2>检测状态</h2>
+        <div id="detectionProgress">
+            <!-- 检测进度和状态将在这里动态显示 -->
+        </div>
+        <div class="detection-controls" style="display: none;">
+            <button type="button" class="stop-btn" onclick="stopDetection()">
+                <i class="fas fa-stop"></i> 停止检测
+            </button>
+        </div>
+        <!-- 添加性能分析图显示区域 -->
+        <div id="perfImage" style="display: none;">
+            <h3>模型可视化图</h3>
+            <img id="perfImageDisplay" src="" alt="模型可视化图" style="max-width: 100%; margin-top: 10px;">
+        </div>
+    </div>
+</div>
+
+<!-- 添加文件浏览器模态框 -->
+<div id="fileBrowserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>选择模型文件</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="file-browser">
+                <div class="file-browser-header">
+                    <div class="current-path">
+                        <span id="currentPath">/</span>
+                    </div>
+                    <button class="nav-btn" onclick="navigateUp()">
+                        <i class="fas fa-arrow-up"></i> 返回上级
+                    </button>
+                </div>
+                <div class="file-list" id="fileList">
+                    <!-- 文件列表将通过JavaScript动态填充 -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" onclick="closeFileBrowser()">取消</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/detection.js') }}"></script>
+{% endblock %} 

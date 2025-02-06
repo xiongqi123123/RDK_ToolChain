@@ -1,0 +1,25 @@
+// the test
+digraph model {
+	images [label=images color=black]
+	NV12TOYUV444 [label="name: NV12TOYUV444
+type: BPU" color=black fillcolor=cadetblue shape=box style=filled]
+	main_graph_subgraph_0 [label="name: main_graph_subgraph_0
+type: BPU" color=black fillcolor=cadetblue shape=box style=filled]
+	"model.24m.0Conv_output_0_HzDequantize" [label="name: model.24m.0Conv_output_0_HzDequantize
+type: Dequantize" color=black fillcolor=lightgrey shape=box style=filled]
+	"model.24m.1Conv_output_0_HzDequantize" [label="name: model.24m.1Conv_output_0_HzDequantize
+type: Dequantize" color=black fillcolor=lightgrey shape=box style=filled]
+	"model.24m.2Conv_output_0_HzDequantize" [label="name: model.24m.2Conv_output_0_HzDequantize
+type: Dequantize" color=black fillcolor=lightgrey shape=box style=filled]
+	small [label=small color=black]
+	medium [label=medium color=black]
+	big [label=big color=black]
+	images -> NV12TOYUV444 [label="1x640x640x3 / 2, NV12, UINT8" color=red]
+	NV12TOYUV444 -> main_graph_subgraph_0 [label="1x640x640x3, YUV444, NHWC, INT8" color=red]
+	main_graph_subgraph_0 -> "model.24m.0Conv_output_0_HzDequantize" [label="1x80x80x18, INT32" color=red]
+	main_graph_subgraph_0 -> "model.24m.1Conv_output_0_HzDequantize" [label="1x40x40x18, INT32" color=red]
+	main_graph_subgraph_0 -> "model.24m.2Conv_output_0_HzDequantize" [label="1x20x20x18, INT32" color=red]
+	"model.24m.0Conv_output_0_HzDequantize" -> small [label="1x80x80x18, FLOAT32, " color=red]
+	"model.24m.1Conv_output_0_HzDequantize" -> medium [label="1x40x40x18, FLOAT32, " color=red]
+	"model.24m.2Conv_output_0_HzDequantize" -> big [label="1x20x20x18, FLOAT32, " color=red]
+}

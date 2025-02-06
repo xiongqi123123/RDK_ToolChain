@@ -1,11 +1,13 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 from util.training import TrainingConfig, training_process
 from util.exporting import ExportConfig, exporting_process
 from util.device import detect_device
 from util.filesystem import list_directory, create_yaml_config
 from util.quantization import QuantizationConfig, checker_process
 from util.conversion import ConversionConfig, conversion_process
+from util.detection import DetectionConfig, detection_process
 import threading
+import os
 
 app = Flask(__name__)
 
@@ -251,15 +253,49 @@ def model_conversion():
             'error_type': 'internal_error'
         }), 500
 
-@app.route('/model-detection')
-def model_detection():
-    """模型检测页面"""
-    return render_template('model_detection.html')
 
 @app.route('/model-testing')
 def model_testing():
     """模型测试页面"""
     return render_template('model_testing.html')
+
+@app.route('/model-detection', methods=['GET', 'POST'])
+def model_detection():
+    """模型检测页面"""
+    if request.method == 'POST':
+        try:
+            # 创建配置对象
+            config = DetectionConfig.from_form(request.form)
+            
+            # 验证配置
+            config.validate()
+            
+            # 启动检测进程
+            detection_process.start(config)
+            
+            return jsonify({
+                'status': 'success',
+                'message': '检测已启动',
+                'config': {
+                    'model_path': config.model_path
+                }
+            })
+            
+        except ValueError as e:
+            return jsonify({
+                'status': 'error',
+                'message': str(e),
+                'error_type': 'validation_error'
+            }), 400
+            
+        except Exception as e:
+            return jsonify({
+                'status': 'error',
+                'message': f'启动检测失败: {str(e)}',
+                'error_type': 'internal_error'
+            }), 500
+            
+    return render_template('model_detection.html')
 
 @app.route('/development-tools')
 def development_tools():
@@ -412,6 +448,44 @@ def stop_conversion():
             'status': 'error',
             'message': f'停止转换失败: {str(e)}'
         }), 500
+
+@app.route('/api/detection-status')
+def get_detection_status():
+    """获取检测状态"""
+    try:
+        return jsonify(detection_process.get_status())
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'获取检测状态失败: {str(e)}'
+        }), 500
+
+@app.route('/api/stop-detection', methods=['POST'])
+def stop_detection():
+    """停止检测"""
+    try:
+        detection_process.stop()
+        return jsonify({
+            'status': 'success',
+            'message': '检测已停止'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'停止检测失败: {str(e)}'
+        }), 500
+
+@app.route('/perf_image/<path:image_path>')
+def serve_perf_image(image_path):
+    """提供性能分析图片"""
+    try:
+        # 使用相对路径
+        if os.path.exists(image_path) and os.path.isfile(image_path):
+            return send_file(image_path, mimetype='image/png')
+        else:
+            return jsonify({'error': '图片文件不存在'}), 404
+    except Exception as e:
+        return jsonify({'error': f'获取图片失败: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
