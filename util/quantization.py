@@ -58,6 +58,10 @@ class CheckerProcess:
 
             try:
                 # 构建检查命令
+                base_dir = Path(__file__).parent.parent.absolute()
+                work_dir = base_dir / "logs" / "checker_output"
+                work_dir.mkdir(parents=True, exist_ok=True)
+
                 checker_cmd = [
                     "hb_mapper",
                     "checker",
@@ -67,6 +71,7 @@ class CheckerProcess:
                 ]
                 
                 print(f"开始检查: {' '.join(checker_cmd)}")
+                print(f"工作目录: {work_dir}")
                 
                 # 创建进程
                 self.process = subprocess.Popen(
@@ -75,7 +80,8 @@ class CheckerProcess:
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
                     bufsize=1,  # 行缓冲
-                    env=dict(os.environ, PYTHONUNBUFFERED="1")  # 禁用Python输出缓冲
+                    env=dict(os.environ, PYTHONUNBUFFERED="1"),  # 禁用Python输出缓冲
+                    cwd=str(work_dir)  # 设置工作目录
                 )
 
                 # 设置非阻塞模式

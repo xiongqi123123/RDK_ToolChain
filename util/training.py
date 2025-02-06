@@ -98,6 +98,10 @@ class TrainingProcess:
                 # 设置设备参数
                 device = "0" if config.device == 'gpu' else "cpu"
                 
+                # 创建保存路径
+                save_dir = base_dir / "logs" / "train_output"
+                save_dir.mkdir(parents=True, exist_ok=True)
+                
                 train_cmd = [
                     "python",
                     "train.py",
@@ -106,7 +110,8 @@ class TrainingProcess:
                     "--epochs", str(config.epochs),
                     "--batch-size", str(config.batch_size),
                     "--img", "640",
-                    "--device", device
+                    "--device", device,
+                    "--project", str(save_dir),  # 设置保存目录
                 ]
                 
                 print(f"开始训练: {' '.join(train_cmd)}")

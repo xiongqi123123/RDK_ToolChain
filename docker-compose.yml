@@ -1,0 +1,21 @@
+version: '3'
+services:
+  toolchain:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./logs:/app/logs
+      - ./models:/app/models
+      - ./util/host/ai_toolchain:/app/util/host/ai_toolchain
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu] 

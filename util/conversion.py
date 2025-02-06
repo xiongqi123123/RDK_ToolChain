@@ -65,12 +65,16 @@ class ConversionConfig:
     def generate_yaml(self) -> str:
         """生成YAML配置文件"""
         # 创建基本配置
+        base_dir = Path(__file__).parent.parent.absolute()
+        work_dir = base_dir / "logs" / "convert_output"
+        work_dir.mkdir(parents=True, exist_ok=True)
+
         config = {
             'model_parameters': {
                 'onnx_model': self.model_path,
                 'march': self.march_type,
                 'layer_out_dump': False,
-                'working_dir': '/home/xq/Learning/ToolChain/logs/convert_output',
+                'working_dir': str(work_dir),
                 'output_model_file_prefix': 'converted_model'
             },
             'input_parameters': {
