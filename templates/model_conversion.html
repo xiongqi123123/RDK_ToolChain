@@ -1,0 +1,116 @@
+{% extends "index.html" %}
+
+{% block content %}
+<div class="training-container">
+    <div class="training-form">
+        <h2>模型转换配置</h2>
+        <form id="conversionForm" action="{{ url_for('model_conversion') }}" method="POST">
+            <div class="form-group">
+                <label for="modelPath">ONNX模型文件</label>
+                <div class="file-input-container">
+                    <input type="text" id="modelPath" name="modelPath" required readonly>
+                    <button type="button" class="browse-btn" onclick="openModelBrowser()">浏览</button>
+                </div>
+                <small class="help-text">请选择需要转换的ONNX模型文件</small>
+            </div>
+
+            <div class="form-group">
+                <label for="marchType">运行架构</label>
+                <select id="marchType" name="marchType" required>
+                    <option value="">请选择运行架构</option>
+                    <option value="bayes-e">X5: Bayes-E</option>
+                    <option value="bernoulli2">X3: Bernoulli2</option>
+                    <option value="bayes">Ultra: Bayes</option>
+                    <option value="nash-e">S100: Nash-E</option>
+                    <option value="nash-m">S100P: Nash-M</option>
+                </select>
+                <small class="help-text">X5: bayes-e X3: Bernoulli2, Ultra: Bayes, S100: Nash-e, S100P: Nash-m</small>
+            </div>
+
+            <div class="form-group">
+                <label for="inputTypeRt">运行时输入格式</label>
+                <select id="inputTypeRt" name="inputTypeRt" required>
+                    <option value="">请选择运行时输入格式</option>
+                    <option value="nv12">NV12</option>
+                    <option value="rgb">RGB</option>
+                </select>
+                <small class="help-text">转换后模型的图像数据输入格式</small>
+            </div>
+
+            <div class="form-group">
+                <label for="inputTypeTrain">训练时输入格式</label>
+                <select id="inputTypeTrain" name="inputTypeTrain" required>
+                    <option value="">请选择训练时输入格式</option>
+                    <option value="rgb">RGB</option>
+                </select>
+                <small class="help-text">模型训练时使用的图像数据格式</small>
+            </div>
+
+            <div class="form-group">
+                <label for="inputLayoutTrain">数据排布</label>
+                <select id="inputLayoutTrain" name="inputLayoutTrain" required>
+                    <option value="">请选择数据排布</option>
+                    <option value="nhwc">NHWC</option>
+                </select>
+                <small class="help-text">模型训练时使用的数据排布格式，默认NHWC</small>
+            </div>
+
+            <div class="form-group">
+                <label for="calDataDir">校准数据集路径</label>
+                <div class="file-input-container">
+                    <input type="text" id="calDataDir" name="calDataDir" required readonly>
+                    <button type="button" class="browse-btn" onclick="openCalDataBrowser()">浏览</button>
+                </div>
+                <small class="help-text">请选择量化校准数据集文件夹路径</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">开始转换</button>
+                <button type="reset" class="reset-btn">重置参数</button>
+            </div>
+        </form>
+    </div>
+    <div class="training-status">
+        <h2>转换状态</h2>
+        <div id="conversionProgress">
+            <!-- 转换进度和状态将在这里动态显示 -->
+        </div>
+        <div class="conversion-controls" style="display: none;">
+            <button type="button" class="stop-btn" onclick="stopConversion()">
+                <i class="fas fa-stop"></i> 停止转换
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 添加文件浏览器模态框 -->
+<div id="fileBrowserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="browserTitle">选择文件</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="file-browser">
+                <div class="file-browser-header">
+                    <div class="current-path">
+                        <span id="currentPath">/</span>
+                    </div>
+                    <button class="nav-btn" onclick="navigateUp()">
+                        <i class="fas fa-arrow-up"></i> 返回上级
+                    </button>
+                </div>
+                <div class="file-list" id="fileList">
+                    <!-- 文件列表将通过JavaScript动态填充 -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" onclick="closeFileBrowser()">取消</button>
+            <button id="selectBtn" class="select-btn" style="display: none;" onclick="selectCurrentFolder()">选择此文件夹</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/conversion.js') }}"></script>
+{% endblock %}

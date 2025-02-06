@@ -1,0 +1,86 @@
+{% extends "index.html" %}
+
+{% block content %}
+<div class="training-container">
+    <div class="training-form">
+        <h2>模型量化配置</h2>
+        <form id="quantizationForm" action="{{ url_for('model_quantization') }}" method="POST">
+            <div class="form-group">
+                <label for="modelFormat">模型格式</label>
+                <select id="modelFormat" name="modelFormat" required>
+                    <option value="onnx" selected>ONNX</option>
+                </select>
+                <small class="help-text">目前仅支持ONNX格式模型的量化</small>
+            </div>
+
+            <div class="form-group">
+                <label for="marchType">运行架构</label>
+                <select id="marchType" name="marchType" required>
+                    <option value="">请选择运行架构</option>
+                    <option value="bayes-e">X5: Bayes-E</option>
+                    <option value="bernoulli2">X3: Bernoulli2</option>
+                    <option value="bayes">Ultra: Bayes</option>
+                    <option value="nash-e">S100: Nash-E</option>
+                    <option value="nash-m">S100P: Nash-M</option>
+                </select>
+                <small class="help-text">X5: bayes-e X3: Bernoulli2, Ultra: Bayes, S100: Nash-e, S100P: Nash-m</small>
+            </div>
+
+            <div class="form-group">
+                <label for="modelPath">ONNX模型文件</label>
+                <div class="file-input-container">
+                    <input type="text" id="modelPath" name="modelPath" required readonly>
+                    <button type="button" class="browse-btn" onclick="openFileBrowser()">浏览</button>
+                </div>
+                <small class="help-text">请选择需要量化的ONNX模型文件</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">开始检查</button>
+                <button type="reset" class="reset-btn">重置参数</button>
+            </div>
+        </form>
+    </div>
+    <div class="training-status">
+        <h2>检查状态</h2>
+        <div id="checkerProgress">
+            <!-- 检查进度和状态将在这里动态显示 -->
+        </div>
+        <div class="checker-controls" style="display: none;">
+            <button type="button" class="stop-btn" onclick="stopChecker()">
+                <i class="fas fa-stop"></i> 停止检查
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 添加文件浏览器模态框 -->
+<div id="fileBrowserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>选择ONNX模型文件</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="file-browser">
+                <div class="file-browser-header">
+                    <div class="current-path">
+                        <span id="currentPath">/</span>
+                    </div>
+                    <button class="nav-btn" onclick="navigateUp()">
+                        <i class="fas fa-arrow-up"></i> 返回上级
+                    </button>
+                </div>
+                <div class="file-list" id="fileList">
+                    <!-- 文件列表将通过JavaScript动态填充 -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" onclick="closeFileBrowser()">取消</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/quantization.js') }}"></script>
+{% endblock %}

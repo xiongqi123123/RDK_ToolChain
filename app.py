@@ -3,6 +3,8 @@ from util.training import TrainingConfig, training_process
 from util.exporting import ExportConfig, exporting_process
 from util.device import detect_device
 from util.filesystem import list_directory, create_yaml_config
+from util.quantization import QuantizationConfig, checker_process
+from util.conversion import ConversionConfig, conversion_process
 import threading
 
 app = Flask(__name__)
@@ -138,15 +140,121 @@ def model_export():
             'error_type': 'internal_error'
         }), 500
 
-@app.route('/model-quantization')
+@app.route('/model-quantization', methods=['GET', 'POST'])
 def model_quantization():
     """模型量化页面"""
-    return render_template('model_quantization.html') 
+    if request.method == 'GET':
+        return render_template('model_quantization.html')
+    
+    # POST请求处理
+    try:
+        # 从表单创建配置
+        config = QuantizationConfig.from_form(request.form)
+        config.validate()
+        
+        # 在新线程中启动检查
+        def run_checker():
+            try:
+                checker_process.start(config)
+            except Exception as e:
+                print(f"检查过程出错: {str(e)}")
+                
+        checker_thread = threading.Thread(target=run_checker)
+        checker_thread.daemon = True  # 设置为守护线程
+        checker_thread.start()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '检查已启动',
+            'config': {
+                'model_format': config.model_format,
+                'march_type': config.march_type,
+                'model_path': config.model_path
+            }
+        })
+        
+    except FileNotFoundError as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'error_type': 'file_not_found'
+        }), 404
+        
+    except ValueError as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'error_type': 'validation_error'
+        }), 400
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'启动检查失败: {str(e)}',
+            'error_type': 'internal_error'
+        }), 500
 
-@app.route('/model-conversion')
+@app.route('/model-conversion', methods=['GET', 'POST'])
 def model_conversion():
-    """模型检查页面"""
-    return render_template('model_check.html')
+    """模型转换页面"""
+    if request.method == 'GET':
+        return render_template('model_conversion.html')
+    
+    # POST请求处理
+    try:
+        # 从表单创建配置
+        config = ConversionConfig.from_form(request.form)
+        config.validate()
+        
+        # 在新线程中启动转换
+        def run_conversion():
+            try:
+                conversion_process.start(config)
+            except Exception as e:
+                print(f"转换过程出错: {str(e)}")
+                
+        conversion_thread = threading.Thread(target=run_conversion)
+        conversion_thread.daemon = True  # 设置为守护线程
+        conversion_thread.start()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '转换已启动',
+            'config': {
+                'model_path': config.model_path,
+                'march_type': config.march_type,
+                'input_type_rt': config.input_type_rt,
+                'input_type_train': config.input_type_train,
+                'input_layout_train': config.input_layout_train,
+                'cal_data_dir': config.cal_data_dir
+            }
+        })
+        
+    except FileNotFoundError as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'error_type': 'file_not_found'
+        }), 404
+        
+    except ValueError as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'error_type': 'validation_error'
+        }), 400
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'启动转换失败: {str(e)}',
+            'error_type': 'internal_error'
+        }), 500
+
+@app.route('/model-detection')
+def model_detection():
+    """模型检测页面"""
+    return render_template('model_detection.html')
 
 @app.route('/model-testing')
 def model_testing():
@@ -251,6 +359,58 @@ def stop_export():
         return jsonify({
             'status': 'error',
             'message': f'停止导出失败: {str(e)}'
+        }), 500
+
+@app.route('/api/checker-status')
+def get_checker_status():
+    """获取检查状态"""
+    try:
+        return jsonify(checker_process.get_status())
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'获取检查状态失败: {str(e)}'
+        }), 500
+
+@app.route('/api/stop-checker', methods=['POST'])
+def stop_checker():
+    """停止检查"""
+    try:
+        checker_process.stop()
+        return jsonify({
+            'status': 'success',
+            'message': '检查已停止'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'停止检查失败: {str(e)}'
+        }), 500
+
+@app.route('/api/conversion-status')
+def get_conversion_status():
+    """获取转换状态"""
+    try:
+        return jsonify(conversion_process.get_status())
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'获取转换状态失败: {str(e)}'
+        }), 500
+
+@app.route('/api/stop-conversion', methods=['POST'])
+def stop_conversion():
+    """停止转换"""
+    try:
+        conversion_process.stop()
+        return jsonify({
+            'status': 'success',
+            'message': '转换已停止'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'停止转换失败: {str(e)}'
         }), 500
 
 if __name__ == '__main__':

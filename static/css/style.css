@@ -480,17 +480,61 @@ input[readonly] {
     color: #d4d4d4;
     padding: 1rem;
     border-radius: 4px;
-    font-family: monospace;
+    font-family: 'Courier New', Courier, monospace;
     font-size: 0.9rem;
-    max-height: 300px;
+    max-height: 500px;
     overflow-y: auto;
     margin-top: 0.5rem;
     white-space: pre-wrap;
     word-wrap: break-word;
 }
 
-.stdout {
+.log-separator {
+    color: #569cd6;
+    font-weight: bold;
+    margin: 0.5rem 0;
+    border-bottom: 1px solid #569cd6;
+}
+
+.log-subseparator {
+    color: #4ec9b0;
+    margin: 0.25rem 0;
+}
+
+.log-info {
+    color: #9cdcfe;
+}
+
+.log-node {
+    color: #ce9178;
+    padding-left: 1rem;
+}
+
+.log-normal {
     color: #d4d4d4;
+}
+
+.stdout {
+    color: #6a9955;
+}
+
+/* 滚动条样式 */
+.log-output::-webkit-scrollbar {
+    width: 8px;
+}
+
+.log-output::-webkit-scrollbar-track {
+    background: #2d2d2d;
+    border-radius: 4px;
+}
+
+.log-output::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+.log-output::-webkit-scrollbar-thumb:hover {
+    background: #666;
 }
 
 .stderr {
