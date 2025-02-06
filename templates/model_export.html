@@ -1,0 +1,109 @@
+{% extends "index.html" %}
+
+{% block content %}
+<div class="training-container">
+    <div class="training-form">
+        <h2>模型导出配置</h2>
+        <form id="exportForm" action="{{ url_for('model_export') }}" method="POST">
+            <div class="form-group">
+                <label for="modelSeries">模型系列</label>
+                <select id="modelSeries" name="modelSeries" required>
+                    <option value="">请先选择模型系列</option>
+                    <option value="yolo">YOLO (目标检测)</option>
+                </select>
+                <small class="help-text">不同模型系列适用于不同的任务场景</small>
+            </div>
+
+            <div class="form-group">
+                <label for="modelVersion">模型版本</label>
+                <select id="modelVersion" name="modelVersion" required>
+                    <option value="">请先选择模型系列</option>
+                </select>
+                <small class="help-text">选择模型系列后可选择对应版本</small>
+            </div>
+
+            <div class="form-group">
+                <label for="modelTag">模型Tag</label>
+                <select id="modelTag" name="modelTag" required>
+                    <option value="">请先选择模型版本</option>
+                </select>
+                <small class="help-text">选择模型版本后可选择对应Tag</small>
+            </div>
+
+            <div class="form-group">
+                <label for="modelSize">模型大小</label>
+                <select id="modelSize" name="modelSize" required>
+                    <option value="">请先选择模型系列</option>
+                </select>
+                <small class="help-text">不同大小的模型在性能和资源占用上有所区别</small>
+            </div>
+
+            <div class="form-group">
+                <label for="modelPath">需导出模型文件</label>
+                <div class="file-input-container">
+                    <input type="text" id="modelPath" name="modelPath" required readonly>
+                    <button type="button" class="browse-btn" onclick="openFileBrowser()">浏览</button>
+                </div>
+                <small class="help-text">请选择需要导出的模型文件（.pt格式）</small>
+            </div>
+
+            <div class="form-group">
+                <label for="exportFormat">导出格式</label>
+                <select id="exportFormat" name="exportFormat" required>
+                    <option value="">请选择导出格式</option>
+                    <option value="onnx">ONNX</option>
+                    <option value="trt">TensorRT</option>
+                    <option value="ncnn">NCNN</option>
+                </select>
+                <small class="help-text">选择适合您目标平台的模型格式</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">开始导出</button>
+                <button type="reset" class="reset-btn">重置参数</button>
+            </div>
+        </form>
+    </div>
+    <div class="training-status">
+        <h2>导出状态</h2>
+        <div id="exportProgress">
+            <!-- 导出进度和状态将在这里动态显示 -->
+        </div>
+        <div class="export-controls" style="display: none;">
+            <button type="button" class="stop-btn" onclick="stopExport()">
+                <i class="fas fa-stop"></i> 停止导出
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 添加文件浏览器模态框 -->
+<div id="fileBrowserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>选择需导出模型文件</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="file-browser">
+                <div class="file-browser-header">
+                    <div class="current-path">
+                        <span id="currentPath">/</span>
+                    </div>
+                    <button class="nav-btn" onclick="navigateUp()">
+                        <i class="fas fa-arrow-up"></i> 返回上级
+                    </button>
+                </div>
+                <div class="file-list" id="fileList">
+                    <!-- 文件列表将通过JavaScript动态填充 -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" onclick="closeFileBrowser()">取消</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/export.js') }}"></script>
+{% endblock %}

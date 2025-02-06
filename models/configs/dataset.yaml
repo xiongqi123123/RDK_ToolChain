@@ -1,0 +1,6 @@
+path: /home/xq/Deep_Learning/Dataset/datasets_tennis_other
+train: images/train
+val: images/val
+nc: 1
+names:
+- '1'
