@@ -77,21 +77,81 @@ class DetectionProcess:
             return None
 
     def _filter_output(self, output: str) -> str:
-        """过滤和处理输出内容"""
+        """过滤和格式化输出内容"""
         if not output:
             return ""
             
+        # 按行处理
         filtered_lines = []
-        lines = output.splitlines()
+        is_model_info = False
+        current_section = None
         
-        for line in lines:
+        for line in output.splitlines():
             line = line.strip()
-            if not line:
+            
+            # 跳过不必要的日志信息
+            if any(skip in line for skip in [
+                "core[", "open!", "HBRT", "DNN", "vlog_is_on",
+                "cost", "builder version"
+            ]):
                 continue
                 
-            # 保留所有输出,方便调试
-            filtered_lines.append(line)
+            # 处理模型基本信息
+            if "model file has" in line:
+                filtered_lines.append("\n=== 模型信息 ===")
+                is_model_info = True
+                continue
                 
+            if is_model_info:
+                if "-----" in line:
+                    continue
+                    
+                if "[model name]" in line:
+                    filtered_lines.append(f"模型名称: {line.split(':')[1].strip()}")
+                    continue
+                    
+                # 处理输入信息
+                if "input[" in line:
+                    current_section = "输入"
+                    filtered_lines.append(f"\n{current_section}信息:")
+                    continue
+                    
+                # 处理输出信息
+                if "output[" in line:
+                    current_section = "输出"
+                    filtered_lines.append(f"\n{current_section}信息:")
+                    continue
+                    
+                # 处理具体参数
+                if current_section and ":" in line:
+                    key, value = line.split(":", 1)
+                    key = key.strip()
+                    value = value.strip()
+                    
+                    # 翻译常见参数名
+                    key_map = {
+                        "name": "名称",
+                        "input source": "输入来源",
+                        "valid shape": "有效形状",
+                        "aligned shape": "对齐形状",
+                        "aligned byte size": "对齐字节大小",
+                        "tensor type": "张量类型",
+                        "tensor layout": "数据排布",
+                        "quanti type": "量化类型",
+                        "stride": "步长"
+                    }
+                    
+                    key = key_map.get(key, key)
+                    
+                    # 美化一些特殊值
+                    if "NONE" in value:
+                        value = "无"
+                    elif "HB_DNN" in value:
+                        value = value.split("HB_DNN_")[1]
+                    
+                    filtered_lines.append(f"  - {key}: {value}")
+                    continue
+            
         return "\n".join(filtered_lines)
 
     def start(self, config: DetectionConfig):
@@ -101,26 +161,57 @@ class DetectionProcess:
                 raise RuntimeError("已有检测进程在运行")
 
             try:
-                # 创建输出目录
-                self._output_dir = os.path.join(os.getcwd(), 'logs', 'detection_output')
-                os.makedirs(self._output_dir, exist_ok=True)
+                # 设置环境变量
+                env = os.environ.copy()
                 
-                # 构建检测命令
-                detection_cmd = [
-                    "hb_perf",
+                # 使用项目内的工具和库文件路径
+                util_dir = os.path.dirname(__file__)
+                host_dir = os.path.join(util_dir, 'host')
+                hrt_tools_dir = os.path.join(host_dir, 'hrt_tools')
+                dnn_lib_dir = os.path.join(host_dir, 'host_package/x5_x86_64_gcc_11.4.0/dnn_x86/lib')
+                
+                # 更新环境变量
+                env.update({
+                    "LD_LIBRARY_PATH": f"{env.get('LD_LIBRARY_PATH', '')}:{hrt_tools_dir}:{dnn_lib_dir}"
+                })
+
+                # 第一步：执行hb_perf命令生成可视化图
+                perf_cmd = [
+                    "hb_perf",  # 直接使用命令，不指定完整路径
                     config.model_path
                 ]
+                print(f"执行模型可视化: {' '.join(perf_cmd)}")
                 
-                print(f"开始检测: {' '.join(detection_cmd)}")
+                perf_process = subprocess.run(perf_cmd, 
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True,
+                    check=True,
+                    env=env  # 使用更新后的环境变量
+                )
+                
+                # 检查hb_perf命令的输出
+                if perf_process.returncode != 0:
+                    raise RuntimeError(f"模型可视化失败: {perf_process.stderr}")
+                
+                # 第二步：执行hrt_model_exec命令获取模型信息
+                hrt_exec_path = os.path.join(hrt_tools_dir, 'hrt_model_exec')
+                info_cmd = [
+                    hrt_exec_path,
+                    "model_info",
+                    "--model_file",
+                    config.model_path
+                ]
+                print(f"获取模型信息: {' '.join(info_cmd)}")
                 
                 # 创建进程
                 self.process = subprocess.Popen(
-                    detection_cmd,
+                    info_cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
                     bufsize=1,  # 行缓冲
-                    env=dict(os.environ, PYTHONUNBUFFERED="1")  # 禁用Python输出缓冲
+                    env=env  # 使用更新后的环境变量
                 )
 
                 # 设置非阻塞模式
@@ -133,6 +224,10 @@ class DetectionProcess:
                 self.status = "running"
                 self.error = None
                 
+            except subprocess.CalledProcessError as e:
+                self.status = "error"
+                self.error = f"命令执行失败: {str(e)}\n{e.stderr if hasattr(e, 'stderr') else ''}"
+                raise RuntimeError(self.error)
             except Exception as e:
                 self.status = "error"
                 self.error = str(e)
@@ -277,12 +372,12 @@ class DetectionProcess:
                 
             # 遍历子目录
             for model_dir in os.listdir(perf_dir):
-                model_path = os.path.join(perf_dir, model_dir)
+                model_path = os.path.join(str(perf_dir), str(model_dir))
                 if os.path.isdir(model_path):
                     # 查找 .png 文件
                     for file in os.listdir(model_path):
                         if file.endswith('.png'):
-                            image_path = os.path.join(model_path, file)
+                            image_path = os.path.join(str(model_path), str(file))
                             print(f"找到模型可视化图片: {image_path}")
                             return image_path  # 返回相对路径
                             
