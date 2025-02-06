@@ -145,8 +145,8 @@ def model_quantization():
 
 @app.route('/model-conversion')
 def model_conversion():
-    """模型转换页面"""
-    return render_template('model_conversion.html')
+    """模型检查页面"""
+    return render_template('model_check.html')
 
 @app.route('/model-testing')
 def model_testing():
