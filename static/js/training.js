@@ -168,7 +168,7 @@ function updateTrainingStatus(data) {
                 <div class="progress-container">
                     <div class="progress-bar" style="width: 0%">0%</div>
                 </div>
-                <p>当前轮次: 0/${data.config.epochs}</p>
+                <p>当前轮次: 1/${data.config.epochs}</p>
             </div>
             <div class="status-item">
                 <h3>训练配置</h3>
@@ -229,13 +229,13 @@ function pollTrainingStatus() {
                 console.log('总epoch:', trainingStatus.totalEpochs);  // 调试日志
                 
                 if (data.current_epoch !== undefined && trainingStatus.totalEpochs) {
-                    const progress = (data.current_epoch / trainingStatus.totalEpochs) * 100;
+                    const progress = ((data.current_epoch + 1) / trainingStatus.totalEpochs) * 100;
                     console.log('计算的进度:', progress);  // 调试日志
                     
                     progressBar.style.transition = 'width 0.5s ease-in-out';
                     progressBar.style.width = `${progress}%`;
                     progressBar.textContent = `${progress.toFixed(1)}%`;
-                    currentEpoch.textContent = `当前轮次: ${data.current_epoch}/${trainingStatus.totalEpochs}`;
+                    currentEpoch.textContent = `当前轮次: ${data.current_epoch + 1}/${trainingStatus.totalEpochs}`;
                 }
                 
                 // 更新日志
