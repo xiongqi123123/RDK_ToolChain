@@ -6,6 +6,7 @@ from util.filesystem import list_directory, create_yaml_config
 from util.quantization import QuantizationConfig, checker_process
 from util.conversion import ConversionConfig, conversion_process
 from util.detection import DetectionConfig, detection_process
+from util.delete import DeleteConfig, delete_process
 import threading
 import os
 from pathlib import Path
@@ -535,7 +536,66 @@ def model_delete():
     """模型去量化页面"""
     if request.method == 'GET':
         return render_template('model_delete.html')
-    
+
+@app.route('/start-delete-detect', methods=['POST'])
+def start_delete_detect():
+    """开始检测反量化节点"""
+    try:
+        config = DeleteConfig.from_form(request.form)
+        config.validate()
+        delete_process.start_detect(config)
+        return jsonify({
+            'status': 'success',
+            'message': '检测已启动'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/start-delete-remove', methods=['POST'])
+def start_delete_remove():
+    """开始移除反量化节点"""
+    try:
+        config = DeleteConfig.from_form(request.form)
+        config.validate()
+        delete_process.start_remove(config)
+        return jsonify({
+            'status': 'success',
+            'message': '移除已启动'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/delete-status')
+def get_delete_status():
+    """获取去量化状态"""
+    try:
+        return jsonify(delete_process.get_status())
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'获取状态失败: {str(e)}'
+        }), 500
+
+@app.route('/stop-delete', methods=['POST'])
+def stop_delete():
+    """停止去量化进程"""
+    try:
+        delete_process.stop()
+        return jsonify({
+            'status': 'success',
+            'message': '进程已停止'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'停止失败: {str(e)}'
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,77 @@
+{% extends "index.html" %}
+
+{% block content %}
+<div class="training-container">
+    <div class="training-form">
+        <h2>模型去量化配置</h2>
+        <form id="deleteForm" action="{{ url_for('model_delete') }}" method="POST">
+            <div class="form-group">
+                <label for="modelPath">模型文件</label>
+                <div class="file-input-container">
+                    <input type="text" id="modelPath" name="modelPath" required readonly>
+                    <button type="button" class="browse-btn" onclick="openFileBrowser()">浏览</button>
+                </div>
+                <small class="help-text">请选择需要去量化的模型文件(.bin格式)</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="submit-btn" onclick="startDetect()">开始检测</button>
+                <button type="reset" class="reset-btn">重置参数</button>
+            </div>
+        </form>
+
+        <!-- 添加节点选择区域 -->
+        <div id="nodeSelection" style="display: none; margin-top: 20px;">
+            <h3>检测到的反量化节点</h3>
+            <div class="node-list" style="max-height: 300px; overflow-y: auto; margin: 10px 0;">
+                <!-- 节点列表将在这里动态显示 -->
+            </div>
+            <div class="form-actions">
+                <button type="button" class="submit-btn" onclick="startRemove()">开始移除</button>
+                <button type="button" class="select-all-btn" onclick="toggleSelectAll()">全选/取消全选</button>
+            </div>
+        </div>
+    </div>
+    <div class="training-status">
+        <h2>操作状态</h2>
+        <div id="deleteProgress">
+            <!-- 进度和状态将在这里动态显示 -->
+        </div>
+        <div class="delete-controls" style="display: none;">
+            <button type="button" class="stop-btn" onclick="stopProcess()">
+                <i class="fas fa-stop"></i> 停止操作
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 添加文件浏览器模态框 -->
+<div id="fileBrowserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>选择模型文件</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="file-browser">
+                <div class="file-browser-header">
+                    <div class="current-path">
+                        <span id="currentPath">/</span>
+                    </div>
+                    <button class="nav-btn" onclick="navigateUp()">
+                        <i class="fas fa-arrow-up"></i> 返回上级
+                    </button>
+                </div>
+                <div class="file-list" id="fileList">
+                    <!-- 文件列表将通过JavaScript动态填充 -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" onclick="closeFileBrowser()">取消</button>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/deleting.js') }}"></script>
+{% endblock %}
