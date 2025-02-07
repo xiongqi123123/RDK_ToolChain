@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RDK模型一站式开发工具</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/D_Robotics.png') }}">
+    <!-- 在线图标，如果在线图标加载失败会自动使用本地图标 -->
+    <link rel="icon" type="image/png" href="https://developer.d-robotics.cc/static/favicon.png" onerror="this.href='{{ url_for('static', filename='img/D_Robotics.png') }}'">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
