@@ -10,6 +10,9 @@ from util.delete import DeleteConfig, delete_process
 import threading
 import os
 from pathlib import Path
+import shutil
+import tempfile
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -596,6 +599,42 @@ def stop_delete():
             'status': 'error',
             'message': f'停止失败: {str(e)}'
         }), 500
+
+@app.route('/download-logs')
+def download_logs():
+    """打包下载logs文件夹"""
+    try:
+        # 获取logs文件夹路径
+        base_dir = Path(__file__).parent
+        logs_dir = base_dir / 'logs'
+        
+        if not logs_dir.exists():
+            return '日志文件夹不存在', 404
+            
+        # 创建临时目录用于存放zip文件
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # 生成zip文件名（包含时间戳）
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            zip_filename = f'logs_{timestamp}.zip'
+            zip_path = os.path.join(temp_dir, zip_filename)
+            
+            # 创建zip文件
+            shutil.make_archive(
+                os.path.splitext(zip_path)[0],  # 不包含扩展名的路径
+                'zip',                          # 压缩格式
+                logs_dir                        # 要压缩的目录
+            )
+            
+            # 发送文件
+            return send_file(
+                zip_path,
+                as_attachment=True,
+                download_name=zip_filename,
+                mimetype='application/zip'
+            )
+            
+    except Exception as e:
+        return str(e), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

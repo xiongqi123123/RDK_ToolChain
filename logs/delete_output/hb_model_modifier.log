@@ -1,7 +1,7 @@
-2025-02-08 01:27:17,336 file: tool_utils.py func: tool_utils line No: 77 log will be stored in /home/xq/Learning/ToolChain/logs/delete_output/hb_model_modifier.log
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 395 storing info of model: /home/xq/RDK/AI_Toolchain/X5/OE/horizon_x5_open_explorer_v1.2.8-py310_20240926/Model/Buff/buff/buff_dim3.bin
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 398 --------input----------
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 400 name: "images"
+2025-02-08 01:36:52,963 file: tool_utils.py func: tool_utils line No: 77 log will be stored in /home/xq/Learning/ToolChain/logs/delete_output/hb_model_modifier.log
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 395 storing info of model: /home/xq/RDK/AI_Toolchain/X5/OE/horizon_x5_open_explorer_v1.2.8-py310_20240926/Model/Buff/buff/buff_dim3.bin
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 398 --------input----------
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 400 name: "images"
 type {
   elem_type: INT8
   dim: 1
@@ -10,8 +10,8 @@ type {
   dim: 3
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 401 --------output----------
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "output0"
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 401 --------output----------
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "output0"
 type {
   elem_type: FLOAT
   dim: 1
@@ -20,7 +20,7 @@ type {
   dim: 64
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "344"
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "344"
 type {
   elem_type: FLOAT
   dim: 1
@@ -29,7 +29,7 @@ type {
   dim: 4
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "352"
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "352"
 type {
   elem_type: FLOAT
   dim: 1
@@ -38,7 +38,7 @@ type {
   dim: 64
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "360"
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "360"
 type {
   elem_type: FLOAT
   dim: 1
@@ -47,7 +47,7 @@ type {
   dim: 4
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "368"
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "368"
 type {
   elem_type: FLOAT
   dim: 1
@@ -56,7 +56,7 @@ type {
   dim: 64
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "376"
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "376"
 type {
   elem_type: FLOAT
   dim: 1
@@ -65,7 +65,7 @@ type {
   dim: 4
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "384"
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "384"
 type {
   elem_type: FLOAT
   dim: 1
@@ -74,7 +74,7 @@ type {
   dim: 15
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "392"
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "392"
 type {
   elem_type: FLOAT
   dim: 1
@@ -83,7 +83,7 @@ type {
   dim: 15
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "400"
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 403 name: "400"
 type {
   elem_type: FLOAT
   dim: 1
@@ -92,8 +92,8 @@ type {
   dim: 15
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 404 --------value_info----------
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv3.0/cv3.0.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 404 --------value_info----------
+2025-02-08 01:36:52,965 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv3.0/cv3.0.2/Conv_output_0_quantized"
 type {
   elem_type: INT32
   dim: 1
@@ -102,7 +102,7 @@ type {
   dim: 4
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv2.1/cv2.1.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,966 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv2.1/cv2.1.2/Conv_output_0_quantized"
 type {
   elem_type: INT32
   dim: 1
@@ -111,7 +111,7 @@ type {
   dim: 64
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv3.1/cv3.1.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,966 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv3.1/cv3.1.2/Conv_output_0_quantized"
 type {
   elem_type: INT32
   dim: 1
@@ -120,7 +120,7 @@ type {
   dim: 4
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv4.0/cv4.0.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,966 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv4.0/cv4.0.2/Conv_output_0_quantized"
 type {
   elem_type: INT32
   dim: 1
@@ -129,7 +129,7 @@ type {
   dim: 15
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv4.1/cv4.1.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,966 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv4.1/cv4.1.2/Conv_output_0_quantized"
 type {
   elem_type: INT32
   dim: 1
@@ -138,7 +138,7 @@ type {
   dim: 15
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv3.2/cv3.2.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,966 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv3.2/cv3.2.2/Conv_output_0_quantized"
 type {
   elem_type: INT32
   dim: 1
@@ -147,7 +147,7 @@ type {
   dim: 4
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv2.2/cv2.2.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,966 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv2.2/cv2.2.2/Conv_output_0_quantized"
 type {
   elem_type: INT32
   dim: 1
@@ -156,7 +156,7 @@ type {
   dim: 64
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv4.2/cv4.2.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,966 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv4.2/cv4.2.2/Conv_output_0_quantized"
 type {
   elem_type: INT32
   dim: 1
@@ -165,7 +165,7 @@ type {
   dim: 15
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv2.0/cv2.0.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,966 file: hb_model_modifier.py func: hb_model_modifier line No: 406 name: "/model.22/cv2.0/cv2.0.2/Conv_output_0_quantized"
 type {
   elem_type: INT32
   dim: 1
@@ -174,8 +174,8 @@ type {
   dim: 64
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 407 --------node----------
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "images"
+2025-02-08 01:36:52,966 file: hb_model_modifier.py func: hb_model_modifier line No: 407 --------node----------
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "images"
 output: "/model.22/cv2.0/cv2.0.2/Conv_output_0_quantized"
 output: "/model.22/cv3.0/cv3.0.2/Conv_output_0_quantized"
 output: "/model.22/cv2.1/cv2.1.2/Conv_output_0_quantized"
@@ -188,7 +188,7 @@ output: "/model.22/cv4.2/cv4.2.2/Conv_output_0_quantized"
 name: "main_graph_subgraph_0"
 op_type: "BPU"
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv2.0/cv2.0.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv2.0/cv2.0.2/Conv_output_0_quantized"
 input: "/model.22/cv2.0/cv2.0.2/Conv_x_scale"
 output: "output0"
 name: "/model.22/cv2.0/cv2.0.2/Conv_output_0_HzDequantize"
@@ -209,7 +209,7 @@ attribute {
   i: 2
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv3.0/cv3.0.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv3.0/cv3.0.2/Conv_output_0_quantized"
 input: "/model.22/cv3.0/cv3.0.2/Conv_x_scale"
 output: "344"
 name: "/model.22/cv3.0/cv3.0.2/Conv_output_0_HzDequantize"
@@ -230,7 +230,7 @@ attribute {
   i: 2
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv2.1/cv2.1.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv2.1/cv2.1.2/Conv_output_0_quantized"
 input: "/model.22/cv2.1/cv2.1.2/Conv_x_scale"
 output: "352"
 name: "/model.22/cv2.1/cv2.1.2/Conv_output_0_HzDequantize"
@@ -251,7 +251,7 @@ attribute {
   i: 2
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv3.1/cv3.1.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv3.1/cv3.1.2/Conv_output_0_quantized"
 input: "/model.22/cv3.1/cv3.1.2/Conv_x_scale"
 output: "360"
 name: "/model.22/cv3.1/cv3.1.2/Conv_output_0_HzDequantize"
@@ -272,7 +272,7 @@ attribute {
   i: 2
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv2.2/cv2.2.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv2.2/cv2.2.2/Conv_output_0_quantized"
 input: "/model.22/cv2.2/cv2.2.2/Conv_x_scale"
 output: "368"
 name: "/model.22/cv2.2/cv2.2.2/Conv_output_0_HzDequantize"
@@ -293,7 +293,7 @@ attribute {
   i: 2
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv3.2/cv3.2.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv3.2/cv3.2.2/Conv_output_0_quantized"
 input: "/model.22/cv3.2/cv3.2.2/Conv_x_scale"
 output: "376"
 name: "/model.22/cv3.2/cv3.2.2/Conv_output_0_HzDequantize"
@@ -314,7 +314,7 @@ attribute {
   i: 2
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv4.0/cv4.0.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv4.0/cv4.0.2/Conv_output_0_quantized"
 input: "/model.22/cv4.0/cv4.0.2/Conv_x_scale"
 output: "384"
 name: "/model.22/cv4.0/cv4.0.2/Conv_output_0_HzDequantize"
@@ -335,7 +335,7 @@ attribute {
   i: 2
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv4.1/cv4.1.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv4.1/cv4.1.2/Conv_output_0_quantized"
 input: "/model.22/cv4.1/cv4.1.2/Conv_x_scale"
 output: "392"
 name: "/model.22/cv4.1/cv4.1.2/Conv_output_0_HzDequantize"
@@ -356,7 +356,7 @@ attribute {
   i: 2
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv4.2/cv4.2.2/Conv_output_0_quantized"
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 409 input: "/model.22/cv4.2/cv4.2.2/Conv_output_0_quantized"
 input: "/model.22/cv4.2/cv4.2.2/Conv_x_scale"
 output: "400"
 name: "/model.22/cv4.2/cv4.2.2/Conv_output_0_HzDequantize"
@@ -377,8 +377,8 @@ attribute {
   i: 2
 }
 
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 410 --------input_type----------
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 412 7
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 413 --------input_layout----------
-2025-02-08 01:27:17,342 file: hb_model_modifier.py func: hb_model_modifier line No: 415 2
-2025-02-08 01:27:17,343 file: hb_model_modifier.py func: hb_model_modifier line No: 430 Nodes that can be deleted: ['/model.22/cv2.0/cv2.0.2/Conv_output_0_HzDequantize', '/model.22/cv3.0/cv3.0.2/Conv_output_0_HzDequantize', '/model.22/cv2.1/cv2.1.2/Conv_output_0_HzDequantize', '/model.22/cv3.1/cv3.1.2/Conv_output_0_HzDequantize', '/model.22/cv2.2/cv2.2.2/Conv_output_0_HzDequantize', '/model.22/cv3.2/cv3.2.2/Conv_output_0_HzDequantize', '/model.22/cv4.0/cv4.0.2/Conv_output_0_HzDequantize', '/model.22/cv4.1/cv4.1.2/Conv_output_0_HzDequantize', '/model.22/cv4.2/cv4.2.2/Conv_output_0_HzDequantize']
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 410 --------input_type----------
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 412 7
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 413 --------input_layout----------
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 415 2
+2025-02-08 01:36:52,967 file: hb_model_modifier.py func: hb_model_modifier line No: 430 Nodes that can be deleted: ['/model.22/cv2.0/cv2.0.2/Conv_output_0_HzDequantize', '/model.22/cv3.0/cv3.0.2/Conv_output_0_HzDequantize', '/model.22/cv2.1/cv2.1.2/Conv_output_0_HzDequantize', '/model.22/cv3.1/cv3.1.2/Conv_output_0_HzDequantize', '/model.22/cv2.2/cv2.2.2/Conv_output_0_HzDequantize', '/model.22/cv3.2/cv3.2.2/Conv_output_0_HzDequantize', '/model.22/cv4.0/cv4.0.2/Conv_output_0_HzDequantize', '/model.22/cv4.1/cv4.1.2/Conv_output_0_HzDequantize', '/model.22/cv4.2/cv4.2.2/Conv_output_0_HzDequantize']

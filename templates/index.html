@@ -4,13 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RDK模型一站式开发工具</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/D_Robotics.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
     <header>
-        <h1>地瓜机器人RDK模型一站式开发工具</h1>
+        <div class="header-content">
+            <h1>地瓜机器人RDK模型一站式开发工具</h1>
+            <button class="download-btn" onclick="downloadLogs()">
+                <i class="fas fa-download"></i> 打包下载
+            </button>
+        </div>
         <nav>
             <ul>
+                <li><a href="{{ url_for('index') }}">首页</a></li>
                 <li><a href="{{ url_for('model_training') }}">模型训练</a></li>
                 <li><a href="{{ url_for('model_export') }}">模型导出</a></li>
                 <li><a href="{{ url_for('model_quantization') }}">模型量化</a></li>
@@ -33,5 +41,39 @@
             <p>博客园: <a href="https://www.cnblogs.com/skyxz/">https://www.cnblogs.com/skyxz/</a></p>
         </div>
     </footer>
+
+    <script>
+    async function downloadLogs() {
+        try {
+            const response = await fetch('/download-logs');
+            if (response.ok) {
+                // 获取文件名
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = 'logs.zip';
+                if (contentDisposition) {
+                    const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                    if (match) {
+                        filename = match[1].replace(/['"]/g, '');
+                    }
+                }
+                
+                // 创建Blob并下载
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } else {
+                alert('下载失败: ' + response.statusText);
+            }
+        } catch (error) {
+            alert('下载出错: ' + error.message);
+        }
+    }
+    </script>
 </body>
 </html> 
