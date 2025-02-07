@@ -8,6 +8,7 @@ from util.conversion import ConversionConfig, conversion_process
 from util.detection import DetectionConfig, detection_process
 import threading
 import os
+from pathlib import Path
 
 app = Flask(__name__)
 
@@ -512,15 +513,29 @@ def stop_detection():
 
 @app.route('/perf_image/<path:image_path>')
 def serve_perf_image(image_path):
-    """提供性能分析图片"""
+    """提供模型可视化图片"""
     try:
-        # 使用相对路径
-        if os.path.exists(image_path) and os.path.isfile(image_path):
-            return send_file(image_path, mimetype='image/png')
-        else:
-            return jsonify({'error': '图片文件不存在'}), 404
+        # 构建图片的完整路径
+        base_dir = Path(__file__).parent
+        image_full_path = base_dir / "logs" / "detection_output" / image_path
+        
+        if not image_full_path.exists():
+            print(f"图片文件不存在: {image_full_path}")
+            return "图片文件不存在", 404
+            
+        print(f"提供图片文件: {image_full_path}")
+        return send_file(str(image_full_path), mimetype='image/png')
+        
     except Exception as e:
-        return jsonify({'error': f'获取图片失败: {str(e)}'}), 500
+        print(f"提供图片文件时出错: {str(e)}")
+        return str(e), 500
+
+@app.route('/model-delete', methods=['GET', 'POST'])
+def model_delete():
+    """模型去量化页面"""
+    if request.method == 'GET':
+        return render_template('model_delete.html')
+    
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True)

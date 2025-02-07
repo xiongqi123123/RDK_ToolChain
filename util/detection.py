@@ -45,36 +45,7 @@ class DetectionProcess:
         self._lock = threading.Lock()
         self._output_dir = None
         self._perf_image = None
-
-    def _generate_perf_image(self, perf_data):
-        """生成性能分析图"""
-        try:
-            # 创建图表
-            plt.figure(figsize=(10, 6))
-            
-            # 解析性能数据
-            layers = perf_data['layers']
-            times = perf_data['times']
-            
-            # 创建条形图
-            y_pos = np.arange(len(layers))
-            plt.barh(y_pos, times)
-            
-            # 设置标签
-            plt.yticks(y_pos, layers)
-            plt.xlabel('执行时间 (ms)')
-            plt.title('模型层级性能分析')
-            
-            # 保存图片
-            image_path = os.path.join(self._output_dir, 'performance.png')
-            plt.savefig(image_path, bbox_inches='tight')
-            plt.close()
-            
-            return image_path
-            
-        except Exception as e:
-            print(f"生成性能分析图失败: {str(e)}")
-            return None
+        self._work_dir = None
 
     def _filter_output(self, output: str) -> str:
         """过滤和格式化输出内容"""
@@ -161,6 +132,11 @@ class DetectionProcess:
                 raise RuntimeError("已有检测进程在运行")
 
             try:
+                # 设置工作目录
+                base_dir = Path(__file__).parent.parent
+                self._work_dir = base_dir / "logs" / "detection_output"
+                self._work_dir.mkdir(parents=True, exist_ok=True)
+                
                 # 设置环境变量
                 env = os.environ.copy()
                 
@@ -187,7 +163,8 @@ class DetectionProcess:
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
                     check=True,
-                    env=env  # 使用更新后的环境变量
+                    env=env,  # 使用更新后的环境变量
+                    cwd=str(self._work_dir)  # 设置工作目录
                 )
                 
                 # 检查hb_perf命令的输出
@@ -211,7 +188,8 @@ class DetectionProcess:
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
                     bufsize=1,  # 行缓冲
-                    env=env  # 使用更新后的环境变量
+                    env=env,  # 使用更新后的环境变量
+                    cwd=str(self._work_dir)  # 设置工作目录
                 )
 
                 # 设置非阻塞模式
@@ -364,22 +342,26 @@ class DetectionProcess:
     def _find_perf_image(self) -> Optional[str]:
         """查找模型可视化图片"""
         try:
+            if not self._work_dir:
+                print("工作目录未设置")
+                return None
+
             # 查找 hb_perf_result 目录
-            perf_dir = 'hb_perf_result'  # 使用相对路径
-            if not os.path.exists(perf_dir):
+            perf_dir = self._work_dir / 'hb_perf_result'
+            if not perf_dir.exists():
                 print(f"模型可视化目录不存在: {perf_dir}")
                 return None
                 
             # 遍历子目录
-            for model_dir in os.listdir(perf_dir):
-                model_path = os.path.join(str(perf_dir), str(model_dir))
-                if os.path.isdir(model_path):
+            for model_dir in perf_dir.iterdir():
+                if model_dir.is_dir():
                     # 查找 .png 文件
-                    for file in os.listdir(model_path):
-                        if file.endswith('.png'):
-                            image_path = os.path.join(str(model_path), str(file))
-                            print(f"找到模型可视化图片: {image_path}")
-                            return image_path  # 返回相对路径
+                    for file in model_dir.iterdir():
+                        if file.suffix.lower() == '.png':
+                            # 返回相对于工作目录的路径
+                            rel_path = file.relative_to(self._work_dir)
+                            print(f"找到模型可视化图片: {rel_path}")
+                            return str(rel_path)
                             
             print("未找到模型可视化图片")
             return None

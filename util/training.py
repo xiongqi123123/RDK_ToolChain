@@ -99,7 +99,7 @@ class TrainingProcess:
                 device = "0" if config.device == 'gpu' else "cpu"
                 
                 # 创建保存路径
-                save_dir = base_dir / "logs" / "train_output"
+                save_dir = base_dir / "logs" / "train_output" / f"{config.model_version}_{config.model_tag}_{config.model_size}"
                 save_dir.mkdir(parents=True, exist_ok=True)
                 
                 train_cmd = [

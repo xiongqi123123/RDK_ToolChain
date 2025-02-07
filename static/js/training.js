@@ -7,15 +7,28 @@ const modelConfigs = {
             { value: "yolov11", label: "YOLO11"}
         ],
         tag: [
-            { value: "v2.0", label: "Yolov5-V2.0" },
-        ],
-
-        sizes: [
-            { value: "s", label: "s" },
-            { value: "n", label: "n" },
-            { value: "m", label: "m" },
-            { value: "l", label: "l" },
-            { value: "x", label: "x" }
+            { 
+                value: "v2.0", 
+                label: "Yolov5-V2.0",
+                // 为每个tag定义其支持的sizes
+                sizes: [
+                    { value: "s", label: "s" },
+                    { value: "m", label: "m" },
+                    { value: "l", label: "l" },
+                    { value: "x", label: "x" }
+                ]
+            },
+            { 
+                value: "v7.0", 
+                label: "Yolov5-V7.0",
+                sizes: [
+                    { value: "s", label: "s" },
+                    { value: "n", label: "n" },
+                    { value: "m", label: "m" },
+                    { value: "l", label: "l" },
+                    { value: "x", label: "x" }
+                ]
+            }
         ]
     }
 };
@@ -49,9 +62,12 @@ function updateTagOption(modelSeries){
 }
 
 // 更新大小选项
-function updateSizeOptions(modelSeries) {
+function updateSizeOptions(modelSeries, selectedTag) {
     const sizeSelect = document.getElementById('modelSize');
-    const sizes = modelConfigs[modelSeries]?.sizes || [];
+    
+    // 根据选中的tag找到对应的配置
+    const tagConfig = modelConfigs[modelSeries]?.tag.find(t => t.value === selectedTag);
+    const sizes = tagConfig?.sizes || [];
     
     sizeSelect.innerHTML = '<option value="">请选择大小</option>';
     sizes.forEach(size => {
@@ -139,6 +155,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 初始设备检测
     detectDevice();
+
+    // 在HTML中需要修改tag选择的事件处理
+    document.getElementById('modelTag').addEventListener('change', function() {
+        const modelSeries = document.getElementById('modelSeries').value; // 假设有一个modelSeries的选择框
+        updateSizeOptions(modelSeries, this.value);
+    });
 });
 
 // 训练状态管理

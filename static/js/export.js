@@ -1,3 +1,24 @@
+// // 模型配置数据
+// const modelConfigs = {
+//     yolo: {
+//         versions: [
+//             { value: "yolov5", label: "YOLOv5" },
+//             { value: "yolov8", label: "YOLOv8" },
+//             { value: "yolov11", label: "YOLO11"}
+//         ],
+//         tag: [
+//             { value: "v2.0", label: "Yolov5-V2.0" },
+//             { value: "v7.0", label: "Yolov5-V7.0" }
+//         ],
+//         sizes: [
+//             { value: "s", label: "s" },
+//             { value: "n", label: "n" },
+//             { value: "m", label: "m" },
+//             { value: "l", label: "l" },
+//             { value: "x", label: "x" }
+//         ]
+//     }
+// };
 // 模型配置数据
 const modelConfigs = {
     yolo: {
@@ -7,18 +28,31 @@ const modelConfigs = {
             { value: "yolov11", label: "YOLO11"}
         ],
         tag: [
-            { value: "v2.0", label: "Yolov5-V2.0" },
-        ],
-        sizes: [
-            { value: "s", label: "s" },
-            { value: "n", label: "n" },
-            { value: "m", label: "m" },
-            { value: "l", label: "l" },
-            { value: "x", label: "x" }
+            { 
+                value: "v2.0", 
+                label: "Yolov5-V2.0",
+                // 为每个tag定义其支持的sizes
+                sizes: [
+                    { value: "s", label: "s" },
+                    { value: "m", label: "m" },
+                    { value: "l", label: "l" },
+                    { value: "x", label: "x" }
+                ]
+            },
+            { 
+                value: "v7.0", 
+                label: "Yolov5-V7.0",
+                sizes: [
+                    { value: "s", label: "s" },
+                    { value: "n", label: "n" },
+                    { value: "m", label: "m" },
+                    { value: "l", label: "l" },
+                    { value: "x", label: "x" }
+                ]
+            }
         ]
     }
 };
-
 // 更新版本选项
 function updateVersionOptions(modelSeries) {
     const versionSelect = document.getElementById('modelVersion');
@@ -47,9 +81,11 @@ function updateTagOption(modelSeries){
 }
 
 // 更新大小选项
-function updateSizeOptions(modelSeries) {
+function updateSizeOptions(modelSeries, selectedTag) {
     const sizeSelect = document.getElementById('modelSize');
-    const sizes = modelConfigs[modelSeries]?.sizes || [];
+    // 根据选中的tag找到对应的配置
+    const tagConfig = modelConfigs[modelSeries]?.tag.find(t => t.value === selectedTag);
+    const sizes = tagConfig?.sizes || [];
     
     sizeSelect.innerHTML = '<option value="">请选择大小</option>';
     sizes.forEach(size => {
@@ -383,3 +419,8 @@ function navigateUp() {
     const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
     loadDirectory(parentPath);
 }
+// 在HTML中需要修改tag选择的事件处理
+document.getElementById('modelTag').addEventListener('change', function() {
+    const modelSeries = document.getElementById('modelSeries').value; // 假设有一个modelSeries的选择框
+    updateSizeOptions(modelSeries, this.value);
+});
