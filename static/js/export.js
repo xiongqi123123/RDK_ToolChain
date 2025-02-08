@@ -1,3 +1,4 @@
+// 模型配置数据
 const modelConfigs = {
     yolo: {
         versions: [
@@ -57,6 +58,34 @@ const modelConfigs = {
                     {
                         value: "seg",
                         label: "YOLOv8-Seg",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    }
+                ]
+            },
+            { 
+                value: "yolov10", 
+                label: "YOLOv10",
+                tags: [
+                    {
+                        value: "detect",
+                        label: "YOLOv10-Detect",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    },
+                    {
+                        value: "pose",
+                        label: "YOLOv10-Pose",
                         sizes: [
                             { value: "n", label: "n" },
                             { value: "s", label: "s" },

@@ -69,6 +69,34 @@ const modelConfigs = {
                 ]
             },
             { 
+                value: "yolov10", 
+                label: "YOLOv10",
+                tags: [
+                    {
+                        value: "detect",
+                        label: "YOLOv10-Detect",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    },
+                    {
+                        value: "pose",
+                        label: "YOLOv10-Pose",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    }
+                ]
+            },
+            { 
                 value: "yolo11", 
                 label: "YOLO11",
                 tags: [
