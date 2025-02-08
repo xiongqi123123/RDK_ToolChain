@@ -56,6 +56,32 @@
             </div>
 
             <div class="form-group">
+                <label for="scaleValue">Scale Value</label>
+                <input type="number" id="scaleValue" name="scaleValue" step="any" value="0.003921568627451" required>
+                <span class="help-text">请输入scale value值，YOLO：0.003921568627451</span>
+            </div>
+
+            <div class="form-group">
+                <label for="nodeInfo">Node Info（可选）</label>
+                <div class="node-info-container">
+                    <input type="text" id="nodePath" name="nodePath" placeholder="节点路径，例如：/model.10/m/m.0/attn/Softmax">
+                    <label for="nodeInfo">nodeInputType</label>
+                    <select id="nodeInputType" name="nodeInputType">
+                        <option value="">请选择nodeInputType</option>
+                        <option value="int16">int16</option>
+                        <option value="int8">int8</option>
+                    </select>
+                    <label for="nodeInfo">nodeOutputType</label>
+                    <select id="nodeOutputType" name="nodeOutputType">
+                        <option value="">请选择nodeOutputType</option>
+                        <option value="int16">int16</option>
+                        <option value="int8">int8</option>
+                    </select>
+                </div>
+                <span class="help-text">请输入节点信息配置</span>
+            </div>
+
+            <div class="form-group">
                 <label for="calDataDir">校准数据集路径</label>
                 <div class="file-input-container">
                     <input type="text" id="calDataDir" name="calDataDir" required readonly>

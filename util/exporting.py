@@ -62,9 +62,15 @@ class ExportProcess:
 
             try:
                 base_dir = Path(__file__).parent.parent.absolute()
-                base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}_{config.model_tag}"
-                
-                export_script = base_path / "export.py"
+                if config.model_version == 'yolov5':
+                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}_{config.model_tag}"
+                    export_script = base_path / "export.py"
+                elif config.model_version == 'yolov8':
+                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
+                    export_script = base_path / "export.py"
+                elif config.model_version == 'yolo11':
+                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
+                    export_script = base_path / "export.py"
                 
                 # 检查文件是否存在
                 if not export_script.exists():
@@ -86,10 +92,6 @@ class ExportProcess:
                 if config.export_format == 'onnx':
                     # v2.0版本会自动导出为ONNX格式，不需要额外参数
                     pass
-                elif config.export_format == 'trt':
-                    print("警告：YOLOv5 v2.0不直接支持TensorRT导出，需要先导出ONNX然后使用TensorRT工具转换")
-                elif config.export_format == 'ncnn':
-                    print("警告：YOLOv5 v2.0不直接支持NCNN导出，需要先导出ONNX然后使用NCNN工具转换")
                 
                 print(f"开始导出: {' '.join(export_cmd)}")
                 
@@ -166,8 +168,13 @@ class ExportProcess:
                             line = self.process.stdout.readline()
                             if not line:
                                 break
-                            stdout_data += line
-                    except (IOError, OSError):
+                            # 保持ANSI颜色代码并添加换行符
+                            line = line.rstrip('\n')
+                            print(f"导出输出: {line}")
+                            # 确保每行输出都有正确的换行
+                            stdout_data += line + '\n'
+                    except (IOError, OSError) as e:
+                        print(f"读取标准输出时出错: {str(e)}")
                         pass
 
                 if self.process.stderr:
@@ -176,50 +183,66 @@ class ExportProcess:
                             line = self.process.stderr.readline()
                             if not line:
                                 break
-                            stderr_data += line
-                    except (IOError, OSError):
+                            # 保持ANSI颜色代码并添加换行符
+                            line = line.rstrip('\n')
+                            print(f"导出错误: {line}")
+                            # 确保每行错误输出都有正确的换行
+                            stderr_data += line + '\n'
+                    except (IOError, OSError) as e:
+                        print(f"读取错误输出时出错: {str(e)}")
                         pass
                             
             except Exception as e:
                 print(f"读取输出时发生错误: {str(e)}")
-            
+
+            # 确保输出不为空
+            if not stdout_data:
+                stdout_data = "等待输出...\n"
+            if not stderr_data:
+                stderr_data = ""
+
             # 解析导出进度
             progress = 0
             if stdout_data:
-                # 这里可以根据实际的输出格式添加进度解析逻辑
-                pass
+                # 更详细的进度解析
+                if "Loading weights from" in stdout_data:
+                    progress = 10
+                elif "PyTorch: starting from" in stdout_data:
+                    progress = 20
+                elif "Starting ONNX export" in stdout_data:
+                    progress = 30
+                elif "ONNX: export success" in stdout_data:
+                    progress = 100
+                elif "Export complete" in stdout_data:
+                    progress = 100
             
-            if return_code is None:
-                # 进程仍在运行
-                return {
-                    'status': 'running',
-                    'message': '导出进行中',
-                    'stdout': stdout_data,
-                    'stderr': stderr_data,
-                    'progress': progress,
-                    'error': None
-                }
-            elif return_code == 0:
-                # 进程正常结束
-                return {
-                    'status': 'completed',
-                    'message': '导出已完成',
-                    'stdout': stdout_data,
-                    'stderr': stderr_data,
-                    'progress': 100,
-                    'error': None
-                }
-            else:
-                # 进程异常结束
-                error_msg = stderr_data if stderr_data else f'导出异常终止，返回码：{return_code}'
-                return {
-                    'status': 'stopped',
-                    'message': '导出异常终止',
-                    'error': error_msg,
-                    'stdout': stdout_data,
-                    'stderr': stderr_data,
-                    'progress': progress
-                }
+            # 构建返回数据
+            result = {
+                'status': 'running',
+                'message': '导出进行中',
+                'stdout': stdout_data,
+                'stderr': stderr_data,
+                'progress': progress,
+                'error': None
+            }
+
+            if return_code is not None:
+                if return_code == 0:
+                    result.update({
+                        'status': 'completed',
+                        'message': '导出已完成',
+                        'progress': 100
+                    })
+                else:
+                    error_msg = stderr_data if stderr_data else f'导出异常终止，返回码：{return_code}'
+                    print(f"导出失败: {error_msg}")
+                    result.update({
+                        'status': 'stopped',
+                        'message': '导出异常终止',
+                        'error': error_msg
+                    })
+
+            return result
 
 # 全局导出进程管理器
 exporting_process = ExportProcess()

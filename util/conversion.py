@@ -17,21 +17,29 @@ class ConversionConfig:
     input_type_train: str
     input_layout_train: str
     cal_data_dir: str
+    scale_value: float
+    node_path: str
+    node_input_type: str
+    node_output_type: str
 
     @classmethod
-    def from_form(cls, form_data) -> 'ConversionConfig':
+    def from_form_data(cls, form_data: dict) -> 'ConversionConfig':
         """从表单数据创建配置对象"""
         try:
             return cls(
-                model_path=form_data.get('modelPath', ''),
-                march_type=form_data.get('marchType', ''),
-                input_type_rt=form_data.get('inputTypeRt', ''),
-                input_type_train=form_data.get('inputTypeTrain', ''),
-                input_layout_train=form_data.get('inputLayoutTrain', ''),
-                cal_data_dir=form_data.get('calDataDir', '')
+                model_path=form_data['modelPath'],
+                march_type=form_data['marchType'],
+                input_type_rt=form_data['inputTypeRt'],
+                input_type_train=form_data['inputTypeTrain'],
+                input_layout_train=form_data['inputLayoutTrain'],
+                cal_data_dir=form_data['calDataDir'],
+                scale_value=float(form_data['scaleValue']),
+                node_path=form_data['nodePath'],
+                node_input_type=form_data['nodeInputType'],
+                node_output_type=form_data['nodeOutputType']
             )
-        except (ValueError, TypeError) as e:
-            raise ValueError(f"配置参数无效: {str(e)}")
+        except (KeyError, ValueError) as e:
+            raise ValueError(f'表单数据无效: {str(e)}')
 
     def validate(self):
         """验证配置参数"""
@@ -69,20 +77,32 @@ class ConversionConfig:
         work_dir = base_dir / "logs" / "convert_output"
         work_dir.mkdir(parents=True, exist_ok=True)
 
+        # 创建node_info配置
+        node_info = {}
+        if self.node_path:
+            node_info = {
+                self.node_path: {
+                    'ON': 'BPU',
+                    'InputType': self.node_input_type,
+                    'OutputType': self.node_output_type
+                }
+            }
+
         config = {
             'model_parameters': {
                 'onnx_model': self.model_path,
                 'march': self.march_type,
                 'layer_out_dump': False,
                 'working_dir': str(work_dir),
-                'output_model_file_prefix': 'converted_model'
+                'output_model_file_prefix': 'converted_model',
+                'node_info': node_info
             },
             'input_parameters': {
                 'input_type_rt': self.input_type_rt,
                 'input_type_train': self.input_type_train,
                 'input_layout_train': self.input_layout_train.upper(),
                 'norm_type': 'data_scale',
-                'scale_value': 0.003921568627451
+                'scale_value': self.scale_value
             },
             'calibration_parameters': {
                 'cal_data_dir': self.cal_data_dir,

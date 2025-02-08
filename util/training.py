@@ -91,6 +91,7 @@ class TrainingProcess:
 
             try:
                 base_dir = Path(__file__).parent.parent.absolute()
+                
                 if config.model_version == 'yolov5':
                     base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}_{config.model_tag}"
                     train_script = base_path / "train.py"
@@ -102,12 +103,21 @@ class TrainingProcess:
                         model_config = base_path / "models" / f"{config.model_version}{config.model_size}.pt"
                     else:
                         model_config = base_path / "models" / f"{config.model_version}{config.model_size}-{config.model_tag}.pt"
-                
+                elif config.model_version == 'yolo11':
+                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
+                    train_script = base_path / "train.py"
+                    if config.model_tag == 'detect':
+                        model_config = base_path / "models" / f"{config.model_version}{config.model_size}.pt"
+                        print(model_config)
+                    else:
+                        model_config = base_path / "models" / f"{config.model_version}{config.model_size}-{config.model_tag}.pt"
+                        print(f"使用本地模型文件: {model_config}")
+
                 # 检查文件是否存在
                 if not train_script.exists():
                     raise FileNotFoundError(f"训练脚本不存在: {train_script}")
-                # if not model_config.exists():
-                #     raise FileNotFoundError(f"模型配置文件不存在: {model_config}")
+                if not model_config.exists():
+                    raise FileNotFoundError(f"模型配置文件不存在: {model_config}")
                 if not Path(yaml_path).exists():
                     raise FileNotFoundError(f"数据集配置文件不存在: {yaml_path}")
                 

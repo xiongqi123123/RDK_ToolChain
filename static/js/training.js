@@ -69,7 +69,7 @@ const modelConfigs = {
                 ]
             },
             { 
-                value: "yolov11", 
+                value: "yolo11", 
                 label: "YOLO11",
                 tags: [
                     {

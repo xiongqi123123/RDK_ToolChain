@@ -209,10 +209,9 @@ def model_conversion():
     if request.method == 'GET':
         return render_template('model_conversion.html')
     
-    # POST请求处理
     try:
         # 从表单创建配置
-        config = ConversionConfig.from_form(request.form)
+        config = ConversionConfig.from_form_data(request.form)
         config.validate()
         
         # 在新线程中启动转换
@@ -235,7 +234,11 @@ def model_conversion():
                 'input_type_rt': config.input_type_rt,
                 'input_type_train': config.input_type_train,
                 'input_layout_train': config.input_layout_train,
-                'cal_data_dir': config.cal_data_dir
+                'cal_data_dir': config.cal_data_dir,
+                'scale_value': config.scale_value,
+                'node_path': config.node_path,
+                'node_input_type': config.node_input_type,
+                'node_output_type': config.node_output_type
             }
         })
         
@@ -249,17 +252,13 @@ def model_conversion():
     except ValueError as e:
         return jsonify({
             'status': 'error',
-            'message': str(e),
-            'error_type': 'validation_error'
+            'message': f'输入数据格式错误: {str(e)}'
         }), 400
-        
     except Exception as e:
         return jsonify({
             'status': 'error',
-            'message': f'启动转换失败: {str(e)}',
-            'error_type': 'internal_error'
+            'message': f'转换失败: {str(e)}'
         }), 500
-
 
 @app.route('/model_testing')
 def model_testing():

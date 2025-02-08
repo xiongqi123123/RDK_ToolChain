@@ -1,53 +1,98 @@
-// // 模型配置数据
-// const modelConfigs = {
-//     yolo: {
-//         versions: [
-//             { value: "yolov5", label: "YOLOv5" },
-//             { value: "yolov8", label: "YOLOv8" },
-//             { value: "yolov11", label: "YOLO11"}
-//         ],
-//         tag: [
-//             { value: "v2.0", label: "Yolov5-V2.0" },
-//             { value: "v7.0", label: "Yolov5-V7.0" }
-//         ],
-//         sizes: [
-//             { value: "s", label: "s" },
-//             { value: "n", label: "n" },
-//             { value: "m", label: "m" },
-//             { value: "l", label: "l" },
-//             { value: "x", label: "x" }
-//         ]
-//     }
-// };
-// 模型配置数据
 const modelConfigs = {
     yolo: {
         versions: [
-            { value: "yolov5", label: "YOLOv5" },
-            { value: "yolov8", label: "YOLOv8" },
-            { value: "yolov11", label: "YOLO11"}
-        ],
-        tag: [
             { 
-                value: "v2.0", 
-                label: "Yolov5-V2.0",
-                // 为每个tag定义其支持的sizes
-                sizes: [
-                    { value: "s", label: "s" },
-                    { value: "m", label: "m" },
-                    { value: "l", label: "l" },
-                    { value: "x", label: "x" }
+                value: "yolov5", 
+                label: "YOLOv5",
+                tags: [
+                    { 
+                        value: "v2.0", 
+                        label: "Yolov5-V2.0",
+                        sizes: [
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    },
+                    { 
+                        value: "v7.0", 
+                        label: "Yolov5-V7.0",
+                        sizes: [
+                            { value: "s", label: "s" },
+                            { value: "n", label: "n" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    }
                 ]
             },
             { 
-                value: "v7.0", 
-                label: "Yolov5-V7.0",
-                sizes: [
-                    { value: "s", label: "s" },
-                    { value: "n", label: "n" },
-                    { value: "m", label: "m" },
-                    { value: "l", label: "l" },
-                    { value: "x", label: "x" }
+                value: "yolov8", 
+                label: "YOLOv8",
+                tags: [
+                    {
+                        value: "detect",
+                        label: "YOLOv8-Detect",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    },
+                    {
+                        value: "pose",
+                        label: "YOLOv8-Pose",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    },
+                    {
+                        value: "seg",
+                        label: "YOLOv8-Seg",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    }
+                ]
+            },
+            { 
+                value: "yolo11", 
+                label: "YOLO11",
+                tags: [
+                    {
+                        value: "detect",
+                        label: "YOLO11-Detect",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    },
+                    {
+                        value: "pose",
+                        label: "YOLO11-Pose",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    }
                 ]
             }
         ]
@@ -67,9 +112,13 @@ function updateVersionOptions(modelSeries) {
     });
 }
 
-function updateTagOption(modelSeries){
+// 更新Tag选项
+function updateTagOptions(modelSeries, selectedVersion) {
     const tagSelect = document.getElementById('modelTag');
-    const tags = modelConfigs[modelSeries]?.tag || [];
+    
+    // 根据选中的version找到对应的配置
+    const versionConfig = modelConfigs[modelSeries]?.versions.find(v => v.value === selectedVersion);
+    const tags = versionConfig?.tags || [];
     
     tagSelect.innerHTML = '<option value="">请选择模型Tag</option>';
     tags.forEach(tag => {
@@ -78,13 +127,18 @@ function updateTagOption(modelSeries){
         option.textContent = tag.label;
         tagSelect.appendChild(option);
     });
+    
+    // 重置size选择
+    document.getElementById('modelSize').innerHTML = '<option value="">请选择大小</option>';
 }
 
 // 更新大小选项
-function updateSizeOptions(modelSeries, selectedTag) {
+function updateSizeOptions(modelSeries, selectedVersion, selectedTag) {
     const sizeSelect = document.getElementById('modelSize');
-    // 根据选中的tag找到对应的配置
-    const tagConfig = modelConfigs[modelSeries]?.tag.find(t => t.value === selectedTag);
+    
+    // 根据选中的version和tag找到对应的配置
+    const versionConfig = modelConfigs[modelSeries]?.versions.find(v => v.value === selectedVersion);
+    const tagConfig = versionConfig?.tags.find(t => t.value === selectedTag);
     const sizes = tagConfig?.sizes || [];
     
     sizeSelect.innerHTML = '<option value="">请选择大小</option>';
@@ -97,19 +151,30 @@ function updateSizeOptions(modelSeries, selectedTag) {
 }
 
 // 文件选择处理
+// 在DOMContentLoaded事件中更新事件监听器
 document.addEventListener('DOMContentLoaded', function() {
     // 模型系列选择事件
     const modelSeriesSelect = document.getElementById('modelSeries');
     modelSeriesSelect.addEventListener('change', (e) => {
         const selectedSeries = e.target.value;
         updateVersionOptions(selectedSeries);
-        updateTagOption(selectedSeries);
-        updateSizeOptions(selectedSeries);
         
-        // 重置版本和大小选择
+        // 重置version、tag和size选择
         document.getElementById('modelVersion').value = '';
         document.getElementById('modelTag').value = '';
         document.getElementById('modelSize').value = '';
+    });
+    // 版本选择事件
+    document.getElementById('modelVersion').addEventListener('change', function() {
+        const modelSeries = document.getElementById('modelSeries').value;
+        updateTagOptions(modelSeries, this.value);
+    });
+
+    // Tag选择事件
+    document.getElementById('modelTag').addEventListener('change', function() {
+        const modelSeries = document.getElementById('modelSeries').value;
+        const selectedVersion = document.getElementById('modelVersion').value;
+        updateSizeOptions(modelSeries, selectedVersion, this.value);
     });
 
     // 表单提交处理
@@ -237,21 +302,29 @@ function pollExportStatus() {
                 
                 // 更新日志
                 const logOutput = document.querySelector('.log-output');
-                if (data.stdout) {
-                    const stdoutDiv = document.createElement('div');
-                    stdoutDiv.className = 'stdout';
-                    stdoutDiv.textContent = data.stdout;
-                    logOutput.appendChild(stdoutDiv);
+                if (data.stdout || data.stderr) {
+                    // 清空之前的日志内容
+                    logOutput.innerHTML = '';
+                    
+                    // 添加标准输出
+                    if (data.stdout) {
+                        const stdoutDiv = document.createElement('div');
+                        stdoutDiv.className = 'stdout';
+                        stdoutDiv.textContent = data.stdout;
+                        logOutput.appendChild(stdoutDiv);
+                    }
+                    
+                    // 添加标准错误
+                    if (data.stderr) {
+                        const stderrDiv = document.createElement('div');
+                        stderrDiv.className = 'stderr';
+                        stderrDiv.textContent = data.stderr;
+                        logOutput.appendChild(stderrDiv);
+                    }
+                    
+                    // 自动滚动到底部
+                    logOutput.scrollTop = logOutput.scrollHeight;
                 }
-                if (data.stderr) {
-                    const stderrDiv = document.createElement('div');
-                    stderrDiv.className = 'stderr';
-                    stderrDiv.textContent = data.stderr;
-                    logOutput.appendChild(stderrDiv);
-                }
-                
-                // 自动滚动到底部
-                logOutput.scrollTop = logOutput.scrollHeight;
                 
                 // 继续轮询
                 setTimeout(pollExportStatus, 1000);
