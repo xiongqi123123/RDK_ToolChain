@@ -82,17 +82,6 @@ const modelConfigs = {
                             { value: "l", label: "l" },
                             { value: "x", label: "x" }
                         ]
-                    },
-                    {
-                        value: "pose",
-                        label: "YOLOv10-Pose",
-                        sizes: [
-                            { value: "n", label: "n" },
-                            { value: "s", label: "s" },
-                            { value: "m", label: "m" },
-                            { value: "l", label: "l" },
-                            { value: "x", label: "x" }
-                        ]
                     }
                 ]
             },
