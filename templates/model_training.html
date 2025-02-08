@@ -90,6 +90,16 @@ dataset_root/
                 <small class="help-text">每行输入一个标签名称，数量需要与类别数量相匹配</small>
             </div>
 
+            <!-- 添加关键点配置 -->
+            <div class="form-group" id="kptShapeGroup" style="display: none;">
+                <label for="kptShape">关键点形状</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="number" id="kptNum" name="kptNum" min="1" value="17" placeholder="关键点数量" style="width: 45%;">
+                    <input type="number" id="kptDim" name="kptDim" min="2" max="3" value="3" placeholder="维度" style="width: 45%;">
+                </div>
+                <small class="help-text">格式: [关键点数量, 维度]，例如: [17, 3] 表示17个3D关键点</small>
+            </div>
+
             <div class="form-actions">
                 <button type="submit" class="submit-btn">开始训练</button>
                 <button type="reset" class="reset-btn">重置参数</button>

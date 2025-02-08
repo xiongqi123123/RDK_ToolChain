@@ -111,7 +111,7 @@ def verify_dataset_structure(dataset_path: str) -> None:
         if not os.path.exists(dir_path):
             raise FileNotFoundError(f"数据集目录结构不完整，缺少目录: {dir_path}")
 
-def create_yaml_config(dataset_path: str, num_classes: int, labels: List[str]) -> str:
+def create_yaml_config(dataset_path: str, num_classes: int, labels: List[str], kpt_shape: Optional[List[int]]) -> str:
     """创建YAML配置文件"""
     try:
         # 确保数据集路径存在
@@ -135,7 +135,8 @@ def create_yaml_config(dataset_path: str, num_classes: int, labels: List[str]) -
             'nc': num_classes,    # 类别数量
             'names': labels       # 类别名称列表
         }
-
+        if kpt_shape:
+            config['kpt_shape'] = kpt_shape
         # 保存配置文件
         config_dir = Path(__file__).parent.parent / "models" / "model_train" / "YOLO" / "yolov5_v2.0" / "data"
         config_dir.mkdir(parents=True, exist_ok=True)

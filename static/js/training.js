@@ -117,6 +117,7 @@ function updateVersionOptions(modelSeries) {
 // 更新Tag选项
 function updateTagOptions(modelSeries, selectedVersion) {
     const tagSelect = document.getElementById('modelTag');
+    tagSelect.innerHTML = '<option value="">请先选择模型版本</option>';
     
     // 根据选中的version找到对应的配置
     const versionConfig = modelConfigs[modelSeries]?.versions.find(v => v.value === selectedVersion);
@@ -129,7 +130,15 @@ function updateTagOptions(modelSeries, selectedVersion) {
         option.textContent = tag.label;
         tagSelect.appendChild(option);
     });
-    
+    tagSelect.onchange = function() {
+        const kptShapeGroup = document.getElementById('kptShapeGroup');
+        if (selectedVersion === 'yolov8' && this.value === 'pose') {
+            kptShapeGroup.style.display = 'block';
+        } else {
+            kptShapeGroup.style.display = 'none';
+        }
+        updateSizeOptions(modelSeries, selectedVersion, this.value);
+    };
     // 重置size选择
     document.getElementById('modelSize').innerHTML = '<option value="">请选择大小</option>';
 }
@@ -330,13 +339,15 @@ function pollTrainingStatus() {
                 console.log('总epoch:', trainingStatus.totalEpochs);  // 调试日志
                 
                 if (data.current_epoch !== undefined && trainingStatus.totalEpochs) {
-                    const progress = ((data.current_epoch + 1) / trainingStatus.totalEpochs) * 100;
+                    if (data.modelSeries == 'yolov5')
+                        data.current_epoch = data.current_epoch + 1
+                    const progress = ((data.current_epoch) / trainingStatus.totalEpochs) * 100;
                     console.log('计算的进度:', progress);  // 调试日志
                     
                     progressBar.style.transition = 'width 0.5s ease-in-out';
                     progressBar.style.width = `${progress}%`;
                     progressBar.textContent = `${progress.toFixed(1)}%`;
-                    currentEpoch.textContent = `当前轮次: ${data.current_epoch + 1}/${trainingStatus.totalEpochs}`;
+                    currentEpoch.textContent = `当前轮次: ${data.current_epoch}/${trainingStatus.totalEpochs}`;
                 }
                 
                 // 更新日志

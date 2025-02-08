@@ -19,11 +19,16 @@ class TrainingConfig:
     batch_size: int
     num_classes: int
     labels: List[str]
+    kpt_num: Optional[int] = None
+    kpt_dim: Optional[int] = None
 
     @classmethod
     def from_form(cls, form_data) -> 'TrainingConfig':
         """从表单数据创建配置对象"""
         try:
+            kpt_num = int(form_data.get('kptNum', 0)) if form_data.get('kptNum') else None
+            kpt_dim = int(form_data.get('kptDim', 0)) if form_data.get('kptDim') else None
+            
             return cls(
                 model_series=form_data.get('modelSeries', ''),
                 model_version=form_data.get('modelVersion', ''),
@@ -34,7 +39,9 @@ class TrainingConfig:
                 epochs=int(form_data.get('epochs', 0)),
                 batch_size=int(form_data.get('batchSize', 0)),
                 num_classes=int(form_data.get('numClasses', 0)),
-                labels=form_data.get('labels', '').strip().split('\n') if form_data.get('labels') else []
+                labels=form_data.get('labels', '').strip().split('\n') if form_data.get('labels') else [],
+                kpt_num=kpt_num,
+                kpt_dim=kpt_dim
             )
         except (ValueError, TypeError) as e:
             raise ValueError(f"配置参数无效: {str(e)}")
@@ -58,6 +65,15 @@ class TrainingConfig:
         
         if len(self.labels) != self.num_classes:
             raise ValueError(f"标签数量({len(self.labels)})与类别数量({self.num_classes})不匹配")
+            
+        # 验证关键点配置
+        if self.model_version == 'yolov8' and self.model_tag == 'pose':
+            if not self.kpt_num or not self.kpt_dim:
+                raise ValueError("YOLOv8 pose模型需要配置关键点形状")
+            if self.kpt_num <= 0:
+                raise ValueError("关键点数量必须大于0")
+            if self.kpt_dim < 2 or self.kpt_dim > 3:
+                raise ValueError("关键点维度必须为2或3")
 
 
 class TrainingProcess:
@@ -85,13 +101,13 @@ class TrainingProcess:
                     if config.model_tag == 'detect':
                         model_config = base_path / "models" / f"{config.model_version}{config.model_size}.pt"
                     else:
-                        model_config = base_path / "models" / f"{config.model_version}{config.model_size}-{config.model_tag}.yaml"
+                        model_config = base_path / "models" / f"{config.model_version}{config.model_size}-{config.model_tag}.pt"
                 
                 # 检查文件是否存在
                 if not train_script.exists():
                     raise FileNotFoundError(f"训练脚本不存在: {train_script}")
-                if not model_config.exists():
-                    raise FileNotFoundError(f"模型配置文件不存在: {model_config}")
+                # if not model_config.exists():
+                #     raise FileNotFoundError(f"模型配置文件不存在: {model_config}")
                 if not Path(yaml_path).exists():
                     raise FileNotFoundError(f"数据集配置文件不存在: {yaml_path}")
                 
