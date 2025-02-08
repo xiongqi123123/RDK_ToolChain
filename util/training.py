@@ -75,10 +75,17 @@ class TrainingProcess:
 
             try:
                 base_dir = Path(__file__).parent.parent.absolute()
-                base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}_{config.model_tag}"
-                
-                train_script = base_path / "train.py"
-                model_config = base_path / "models" / f"yolov5{config.model_size}.yaml"
+                if config.model_version == 'yolov5':
+                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}_{config.model_tag}"
+                    train_script = base_path / "train.py"
+                    model_config = base_path / "models" / f"{config.model_version}{config.model_size}.yaml"
+                elif config.model_version == 'yolov8':
+                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
+                    train_script = base_path / "train.py"
+                    if config.model_tag == 'detect':
+                        model_config = base_path / "models" / f"{config.model_version}{config.model_size}.pt"
+                    else:
+                        model_config = base_path / "models" / f"{config.model_version}{config.model_size}-{config.model_tag}.yaml"
                 
                 # 检查文件是否存在
                 if not train_script.exists():

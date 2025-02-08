@@ -2,31 +2,98 @@
 const modelConfigs = {
     yolo: {
         versions: [
-            { value: "yolov5", label: "YOLOv5" },
-            { value: "yolov8", label: "YOLOv8" },
-            { value: "yolov11", label: "YOLO11"}
-        ],
-        tag: [
             { 
-                value: "v2.0", 
-                label: "Yolov5-V2.0",
-                // 为每个tag定义其支持的sizes
-                sizes: [
-                    { value: "s", label: "s" },
-                    { value: "m", label: "m" },
-                    { value: "l", label: "l" },
-                    { value: "x", label: "x" }
+                value: "yolov5", 
+                label: "YOLOv5",
+                tags: [
+                    { 
+                        value: "v2.0", 
+                        label: "Yolov5-V2.0",
+                        sizes: [
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    },
+                    { 
+                        value: "v7.0", 
+                        label: "Yolov5-V7.0",
+                        sizes: [
+                            { value: "s", label: "s" },
+                            { value: "n", label: "n" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    }
                 ]
             },
             { 
-                value: "v7.0", 
-                label: "Yolov5-V7.0",
-                sizes: [
-                    { value: "s", label: "s" },
-                    { value: "n", label: "n" },
-                    { value: "m", label: "m" },
-                    { value: "l", label: "l" },
-                    { value: "x", label: "x" }
+                value: "yolov8", 
+                label: "YOLOv8",
+                tags: [
+                    {
+                        value: "detect",
+                        label: "YOLOv8-Detect",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    },
+                    {
+                        value: "pose",
+                        label: "YOLOv8-Pose",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    },
+                    {
+                        value: "seg",
+                        label: "YOLOv8-Seg",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    }
+                ]
+            },
+            { 
+                value: "yolov11", 
+                label: "YOLO11",
+                tags: [
+                    {
+                        value: "detect",
+                        label: "YOLO11-Detect",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    },
+                    {
+                        value: "pose",
+                        label: "YOLO11-Pose",
+                        sizes: [
+                            { value: "n", label: "n" },
+                            { value: "s", label: "s" },
+                            { value: "m", label: "m" },
+                            { value: "l", label: "l" },
+                            { value: "x", label: "x" }
+                        ]
+                    }
                 ]
             }
         ]
@@ -47,9 +114,13 @@ function updateVersionOptions(modelSeries) {
     });
 }
 
-function updateTagOption(modelSeries){
+// 更新Tag选项
+function updateTagOptions(modelSeries, selectedVersion) {
     const tagSelect = document.getElementById('modelTag');
-    const tags = modelConfigs[modelSeries]?.tag || [];
+    
+    // 根据选中的version找到对应的配置
+    const versionConfig = modelConfigs[modelSeries]?.versions.find(v => v.value === selectedVersion);
+    const tags = versionConfig?.tags || [];
     
     tagSelect.innerHTML = '<option value="">请选择模型Tag</option>';
     tags.forEach(tag => {
@@ -58,15 +129,18 @@ function updateTagOption(modelSeries){
         option.textContent = tag.label;
         tagSelect.appendChild(option);
     });
-
+    
+    // 重置size选择
+    document.getElementById('modelSize').innerHTML = '<option value="">请选择大小</option>';
 }
 
 // 更新大小选项
-function updateSizeOptions(modelSeries, selectedTag) {
+function updateSizeOptions(modelSeries, selectedVersion, selectedTag) {
     const sizeSelect = document.getElementById('modelSize');
     
-    // 根据选中的tag找到对应的配置
-    const tagConfig = modelConfigs[modelSeries]?.tag.find(t => t.value === selectedTag);
+    // 根据选中的version和tag找到对应的配置
+    const versionConfig = modelConfigs[modelSeries]?.versions.find(v => v.value === selectedVersion);
+    const tagConfig = versionConfig?.tags.find(t => t.value === selectedTag);
     const sizes = tagConfig?.sizes || [];
     
     sizeSelect.innerHTML = '<option value="">请选择大小</option>';
@@ -105,13 +179,24 @@ document.addEventListener('DOMContentLoaded', function() {
     modelSeriesSelect.addEventListener('change', (e) => {
         const selectedSeries = e.target.value;
         updateVersionOptions(selectedSeries);
-        updateTagOption(selectedSeries);
-        updateSizeOptions(selectedSeries);
         
-        // 重置版本和大小选择
+        // 重置version、tag和size选择
         document.getElementById('modelVersion').value = '';
         document.getElementById('modelTag').value = '';
         document.getElementById('modelSize').value = '';
+    });
+
+    // 版本选择事件
+    document.getElementById('modelVersion').addEventListener('change', function() {
+        const modelSeries = document.getElementById('modelSeries').value;
+        updateTagOptions(modelSeries, this.value);
+    });
+
+    // Tag选择事件
+    document.getElementById('modelTag').addEventListener('change', function() {
+        const modelSeries = document.getElementById('modelSeries').value;
+        const selectedVersion = document.getElementById('modelVersion').value;
+        updateSizeOptions(modelSeries, selectedVersion, this.value);
     });
 
     // 浏览按钮点击事件 - 直接打开我们的自定义文件浏览器
@@ -155,12 +240,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 初始设备检测
     detectDevice();
-
-    // 在HTML中需要修改tag选择的事件处理
-    document.getElementById('modelTag').addEventListener('change', function() {
-        const modelSeries = document.getElementById('modelSeries').value; // 假设有一个modelSeries的选择框
-        updateSizeOptions(modelSeries, this.value);
-    });
 });
 
 // 训练状态管理
