@@ -114,6 +114,7 @@ def verify_dataset_structure(dataset_path: str) -> None:
 def create_yaml_config(dataset_path: str, num_classes: int, labels: List[str], kpt_shape: Optional[List[int]]) -> str:
     """创建YAML配置文件"""
     try:
+        print(f"创建YAML配置文件: {dataset_path}, {num_classes}, {labels}, {kpt_shape}")
         # 确保数据集路径存在
         dataset_path = os.path.abspath(dataset_path)
         if not os.path.exists(dataset_path):
@@ -137,6 +138,7 @@ def create_yaml_config(dataset_path: str, num_classes: int, labels: List[str], k
         }
         if kpt_shape:
             config['kpt_shape'] = kpt_shape
+        print(config)
         # 保存配置文件
         config_dir = Path(__file__).parent.parent / "models" / "model_train" / "YOLO" / "yolov5_v2.0" / "data"
         config_dir.mkdir(parents=True, exist_ok=True)

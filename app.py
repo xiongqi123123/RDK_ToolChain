@@ -34,7 +34,7 @@ def model_training():
         config.validate()
         
         # 创建数据集配置文件
-        kpt_shape = [config.kpt_num, config.kpt_dim] if config.model_version == 'yolov8' and config.model_tag == 'pose' else None
+        kpt_shape = [config.kpt_num, config.kpt_dim] if config.model_tag == 'pose' else None
         yaml_path = create_yaml_config(
             config.dataset_path,
             config.num_classes,

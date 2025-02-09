@@ -70,15 +70,25 @@ main {
 .training-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    padding: 1rem;
+    /* gap: 2rem;
+    padding: 1rem; */
+    gap: 20px;
+    padding: 20px;
+    max-width: 100%;
+    margin: 0 auto;
 }
 
 .training-form {
-    background-color: white;
+    /* background-color: white;
     padding: 2rem;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); */
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    height: calc(100vh - 200px);
+    overflow-y: auto;
 }
 
 .training-form h2 {
@@ -95,19 +105,24 @@ main {
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: var(--text-color);
-    font-weight: bold;
+    /* color: var(--text-color);
+    font-weight: bold; */
+    font-weight: 500;
 }
 
+.form-group input,
+
 .form-group select,
-.form-group input[type="text"],
-.form-group input[type="number"],
+/* .form-group input[type="text"],
+.form-group input[type="number"], */
 .form-group textarea {
     width: 100%;
-    padding: 0.5rem;
+    /* padding: 0.5rem; */
+    padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 1rem;
+    /* font-size: 1rem; */
+    margin-bottom: 0.5rem;
 }
 
 .form-group textarea {
@@ -170,10 +185,15 @@ main {
 }
 
 .training-status {
-    background-color: white;
-    padding: 2rem;
+    /* background-color: white;
+    padding: 2rem; */
+    background: #fff;
+    padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    /* box-shadow: 0 2px 5px rgba(0,0,0,0.1); */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    height: calc(100vh - 200px);
+    overflow-y: auto;
 }
 
 .training-status h2 {
@@ -476,17 +496,22 @@ input[readonly] {
 
 /* 日志输出样式 */
 .log-output {
-    background-color: #1e1e1e;
+    /* background-color: #1e1e1e;
     color: #d4d4d4;
-    padding: 1rem;
+    padding: 1rem; */
+    background: #f8f9fa;
+    padding: 10px;
     border-radius: 4px;
-    font-family: 'Courier New', Courier, monospace;
+    /* font-family: 'Courier New', Courier, monospace;
     font-size: 0.9rem;
     max-height: 500px;
     overflow-y: auto;
-    margin-top: 0.5rem;
+    margin-top: 0.5rem; */
+    font-family: monospace;
     white-space: pre-wrap;
-    word-wrap: break-word;
+    /* word-wrap: break-word; */
+    max-height: calc(100vh - 400px);
+    overflow-y: auto;
 }
 
 .log-separator {
@@ -628,4 +653,40 @@ footer {
 
 .download-btn i {
     font-size: 18px;
-} 
+}
+
+/* 美化滚动条样式 */
+.training-form::-webkit-scrollbar,
+.training-status::-webkit-scrollbar {
+    width: 8px;
+}
+
+.training-form::-webkit-scrollbar-track,
+.training-status::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.training-form::-webkit-scrollbar-thumb,
+.training-status::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.training-form::-webkit-scrollbar-thumb:hover,
+.training-status::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* 确保在小屏幕上也能良好显示 */
+@media (max-width: 1024px) {
+    .training-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .training-form,
+    .training-status {
+        height: auto;
+        max-height: 600px;
+    }
+}

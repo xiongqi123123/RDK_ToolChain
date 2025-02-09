@@ -160,7 +160,7 @@ function updateTagOptions(modelSeries, selectedVersion) {
     });
     tagSelect.onchange = function() {
         const kptShapeGroup = document.getElementById('kptShapeGroup');
-        if (selectedVersion === 'yolov8' && this.value === 'pose') {
+        if (this.value === 'pose') {
             kptShapeGroup.style.display = 'block';
         } else {
             kptShapeGroup.style.display = 'none';
