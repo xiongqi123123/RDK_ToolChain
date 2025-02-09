@@ -143,12 +143,18 @@ function updateLogOutput(data) {
                 // 处理不同类型的日志行
                 if (line.includes('='.repeat(20))) {
                     logLine.className = 'log-separator';
+                    // 移除多余的等号,只保留必要的分隔线
+                    line = line.replace(/={20,}/g, '='.repeat(20));
                 } else if (line.includes('-'.repeat(10))) {
                     logLine.className = 'log-subseparator';
+                    // 移除多余的横线,只保留必要的分隔线
+                    line = line.replace(/-{10,}/g, '-'.repeat(10));
                 } else if (line.includes('INFO:')) {
                     logLine.className = 'log-info';
                 } else if (line.trim().startsWith('Node')) {
                     logLine.className = 'log-node';
+                    // 压缩Node信息行中的空格
+                    line = line.replace(/\s+/g, ' ');
                 } else {
                     logLine.className = 'log-normal';
                 }

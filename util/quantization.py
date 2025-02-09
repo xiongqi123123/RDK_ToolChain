@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional
 import os
 from pathlib import Path
 import fcntl
+import re
 
 @dataclass
 class QuantizationConfig:
@@ -224,67 +225,39 @@ class CheckerProcess:
             return status_data
 
     def _filter_output(self, output: str) -> str:
-        """过滤和处理输出内容,主要返回量化节点信息和输出信息"""
-        if not output:
-            return ""
-            
-        # 按行处理
+        """过滤和格式化输出内容"""
+        # 过滤掉进度条行
+        lines = output.split('\n')
         filtered_lines = []
-        is_node_info = False  # 是否在节点信息区域
-        is_output_info = False  # 是否在输出信息区域
+        for line in lines:
+            # 跳过进度条行
+            if '[' in line and ']' in line and ('%' in line or any(c in line for c in '-=')):
+                continue
+            filtered_lines.append(line)
         
-        for line in output.splitlines():
-            line = line.strip()
-            
-            # 开始节点信息区域
-            if "The main quantized node information:" in line:
-                is_node_info = True
-                filtered_lines.append(line)
-                continue
-                
-            # 开始输出信息区域
-            if "The quantized model output:" in line:
-                is_node_info = False
-                is_output_info = True
-                filtered_lines.append("\n" + line)
-                continue
-                
-            # 结束输出信息区域
-            if "End to Horizon NN Model Convert" in line:
-                is_output_info = False
-                filtered_lines.append(line)
-                continue
-                
-            # 在节点信息区域内
-            if is_node_info:
-                if any([
-                    "===" in line,  # 分隔线
-                    "---" in line,  # 分隔线
-                    "Node" in line,  # 表头
-                    "BPU" in line,  # 节点信息
-                ]):
-                    filtered_lines.append(line)
-                continue
-                
-            # 在输出信息区域内
-            if is_output_info:
-                if any([
-                    "===" in line,  # 分隔线
-                    "---" in line,  # 分隔线
-                    "Output" in line,  # 输出信息
-                    "ONNX model output" in line,  # ONNX输出信息
-                ]):
-                    filtered_lines.append(line)
-                continue
-                
-            # 其他重要信息
-            if any([
-                "End to compile the model" in line,
-                "End model checking" in line,
-            ]):
-                filtered_lines.append(line)
-                
-        return "\n".join(filtered_lines)
+        output = '\n'.join(filtered_lines)
+        
+        # 替换多个连续空格为单个空格,但保留节点路径的对齐
+        lines = output.split('\n')
+        formatted_lines = []
+        for line in lines:
+            if 'Node' in line and 'Type' in line:
+                # 处理表头行
+                parts = line.split()
+                formatted_line = f"{parts[0]:<45} {parts[1]:<5} {parts[2]:<10} {parts[3]:<20} {parts[4]} {parts[5]} {parts[6]}"
+                formatted_lines.append(formatted_line)
+            elif '/model' in line:
+                # 处理节点信息行
+                parts = line.split()
+                if len(parts) >= 7:
+                    formatted_line = f"{parts[0]:<45} {parts[1]:<5} {parts[2]:<10} {parts[3]:<20} {parts[4]} {parts[5]} {parts[6]}"
+                    formatted_lines.append(formatted_line)
+                else:
+                    formatted_lines.append(line)
+            else:
+                formatted_lines.append(line)
+        
+        return '\n'.join(formatted_lines)
 
 # 全局检查进程管理器
 checker_process = CheckerProcess() 
