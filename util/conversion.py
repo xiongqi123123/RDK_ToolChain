@@ -18,14 +18,28 @@ class ConversionConfig:
     input_layout_train: str
     cal_data_dir: str
     scale_value: float
-    node_path: str
-    node_input_type: str
-    node_output_type: str
+    node_info: Dict[str, Dict[str, str]]  # 修改为字典类型
 
     @classmethod
     def from_form_data(cls, form_data: dict) -> 'ConversionConfig':
         """从表单数据创建配置对象"""
         try:
+            # 处理节点信息
+            node_info = {}
+            if 'nodePath[]' in form_data:
+                # 如果是列表，则使用 getlist 获取所有值
+                paths = form_data.getlist('nodePath[]')
+                input_types = form_data.getlist('nodeInputType[]')
+                output_types = form_data.getlist('nodeOutputType[]')
+                
+                # 将数组转换为字典格式
+                for i in range(len(paths)):
+                    if paths[i]:  # 只处理非空路径
+                        node_info[paths[i]] = {
+                            'ON': 'BPU',  # 添加 ON 字段
+                            'InputType': input_types[i],  # 修改为 InputType
+                            'OutputType': output_types[i]  # 修改为 OutputType
+                        }
             return cls(
                 model_path=form_data['modelPath'],
                 march_type=form_data['marchType'],
@@ -34,9 +48,7 @@ class ConversionConfig:
                 input_layout_train=form_data['inputLayoutTrain'],
                 cal_data_dir=form_data['calDataDir'],
                 scale_value=float(form_data['scaleValue']),
-                node_path=form_data['nodePath'],
-                node_input_type=form_data['nodeInputType'],
-                node_output_type=form_data['nodeOutputType']
+                node_info=node_info
             )
         except (KeyError, ValueError) as e:
             raise ValueError(f'表单数据无效: {str(e)}')
@@ -77,17 +89,6 @@ class ConversionConfig:
         work_dir = base_dir / "logs" / "convert_output"
         work_dir.mkdir(parents=True, exist_ok=True)
 
-        # 创建node_info配置
-        node_info = {}
-        if self.node_path:
-            node_info = {
-                self.node_path: {
-                    'ON': 'BPU',
-                    'InputType': self.node_input_type,
-                    'OutputType': self.node_output_type
-                }
-            }
-
         config = {
             'model_parameters': {
                 'onnx_model': self.model_path,
@@ -95,7 +96,7 @@ class ConversionConfig:
                 'layer_out_dump': False,
                 'working_dir': str(work_dir),
                 'output_model_file_prefix': 'converted_model',
-                'node_info': node_info
+                'node_info': self.node_info  # 直接使用字典，不要转换为字符串
             },
             'input_parameters': {
                 'input_type_rt': self.input_type_rt,
@@ -116,7 +117,7 @@ class ConversionConfig:
                 'optimize_level': 'O3'
             }
         }
-        
+        print(config)
         # 创建临时YAML文件
         with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
             yaml.safe_dump(config, f, default_flow_style=False)

@@ -341,3 +341,34 @@ window.onclick = function(event) {
         closeFileBrowser();
     }
 };
+
+function addNodeInfo() {
+    const container = document.getElementById('nodeInfoContainer');
+    const newNode = document.createElement('div');
+    newNode.className = 'node-info-item';
+    newNode.innerHTML = `
+        <div class="node-info-container">
+            <label>节点路径
+                <button type="button" class="remove-node-btn" onclick="removeNodeInfo(this)">
+                    <i class="fas fa-minus"></i> 删除
+                </button>
+            </label>
+            <input type="text" name="nodePath[]" placeholder="节点路径" class="node-path">
+            <label>nodeInputType</label>
+            <select name="nodeInputType[]" class="node-type">
+                <option value="int8">int8</option>
+                <option value="int16">int16</option>
+            </select>
+            <label>nodeOutputType</label>
+            <select name="nodeOutputType[]" class="node-type">
+                <option value="int8">int8</option>
+                <option value="int16">int16</option>
+            </select>
+        </div>
+    `;
+    container.appendChild(newNode);
+}
+
+function removeNodeInfo(button) {
+    button.closest('.node-info-item').remove();
+}

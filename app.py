@@ -210,6 +210,7 @@ def model_conversion():
         return render_template('model_conversion.html')
     
     try:
+        print(request.form)
         # 从表单创建配置
         config = ConversionConfig.from_form_data(request.form)
         config.validate()
@@ -236,9 +237,7 @@ def model_conversion():
                 'input_layout_train': config.input_layout_train,
                 'cal_data_dir': config.cal_data_dir,
                 'scale_value': config.scale_value,
-                'node_path': config.node_path,
-                'node_input_type': config.node_input_type,
-                'node_output_type': config.node_output_type
+                'node_info': config.node_info
             }
         })
         

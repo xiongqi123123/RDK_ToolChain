@@ -1,3 +1,9 @@
+:root {
+    --primary-color: #FF8C00;
+    --secondary-color: #FFA500;
+    --background-color: #FFF;
+    --text-color: #333;
+}
 .form-group {
     margin-bottom: 1.5rem;
 }
@@ -28,4 +34,48 @@
     margin-top: 0.25rem;
     font-size: 0.875rem;
     color: #6c757d;
+}
+
+.node-info-item {
+    margin-bottom: 10px;
+}
+
+.node-path {
+    flex: 3;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.node-type {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.add-node-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.add-node-btn:hover {
+    background-color: var(--primary-color);
+}
+
+.remove-node-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.remove-node-btn:hover {
+    background-color: var(--primary-color);
 } 

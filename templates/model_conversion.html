@@ -62,23 +62,33 @@
             </div>
 
             <div class="form-group">
-                <label for="nodeInfo">Node Info（可选）</label>
-                <div class="node-info-container">
-                    <input type="text" id="nodePath" name="nodePath" placeholder="节点路径，例如：/model.10/m/m.0/attn/Softmax">
-                    <label for="nodeInfo">nodeInputType</label>
-                    <select id="nodeInputType" name="nodeInputType">
-                        <option value="">请选择nodeInputType</option>
-                        <option value="int16">int16</option>
-                        <option value="int8">int8</option>
-                    </select>
-                    <label for="nodeInfo">nodeOutputType</label>
-                    <select id="nodeOutputType" name="nodeOutputType">
-                        <option value="">请选择nodeOutputType</option>
-                        <option value="int16">int16</option>
-                        <option value="int8">int8</option>
-                    </select>
+                <label>节点信息配置（可选）</label>
+                <div id="nodeInfoContainer">
+                    <div class="node-info-item">
+                        <div class="node-info-container">
+                            <label>节点路径
+                                <button type="button" class="remove-node-btn" onclick="removeNodeInfo(this)">
+                                    <i class="fas fa-minus"></i> 删除
+                                </button>
+                            </label>
+                            <input type="text" name="nodePath[]" placeholder="节点路径" class="node-path">
+                            <label>nodeInputType</label>
+                            <select name="nodeInputType[]" class="node-type">
+                                <option value="int8">int8</option>
+                                <option value="int16">int16</option>
+                            </select>
+                            <label>nodeOutputType</label>
+                            <select name="nodeOutputType[]" class="node-type">
+                                <option value="int8">int8</option>
+                                <option value="int16">int16</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <span class="help-text">请输入节点信息配置</span>
+                <button type="button" class="add-node-btn" onclick="addNodeInfo()">
+                    <i class="fas fa-plus"></i> 添加节点
+                </button>
+                <small class="help-text">配置需要特殊处理的节点信息，如Softmax等</small>
             </div>
 
             <div class="form-group">
