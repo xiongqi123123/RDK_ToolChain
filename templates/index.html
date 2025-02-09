@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RDK模型一站式开发工具</title>
-    <!-- 在线图标，如果在线图标加载失败会自动使用本地图标 -->
     <link rel="icon" type="image/png" href="https://developer.d-robotics.cc/static/favicon.png" onerror="this.href='{{ url_for('static', filename='img/D_Robotics.png') }}'">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body>
     <header>
@@ -34,6 +34,45 @@
     <main>
         {% block content %}
         {% endblock %}
+        {% if request.endpoint == 'index' %}  <!-- 只在首页显示 -->
+        <div class="content">
+            <!-- <h1>欢迎使用地瓜机器人RDK模型一站式开发工具!</h1>
+            <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个工具预计将实现ModelZoo中全系列模型从训练到转换的全流程可视化操作，目前支持所有模型的量化转换操作，
+                训练与导出目前已经完成ModelZoo中YOLO全系列的实现，后续将陆续适配ResNet系列模型，FCOS等模型，
+                欢迎大家使用，并提出宝贵的意见和建议！！！
+            </p>
+            <p>
+               · 项目开源地址：<a href="https://github.com/xiongqi123123/RDK_ToolChain.git">https://github.com/xiongqi123123/RDK_ToolChain.git</a>
+            </p> -->
+            <div class="welcome-section">
+                <h1 class="welcome-title">欢迎使用地瓜机器人RDK模型一站式开发工具!</h1>
+                <div class="welcome-description">
+                    <p class="intro-text">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个工具预计将实现ModelZoo中全系列模型从训练到转换的全流程可视化操作，目前支持所有模型的量化转换操作，
+                        训练与导出目前已经完成ModelZoo中YOLO全系列的实现，后续将陆续适配ResNet系列模型，FCOS等模型,欢迎大家使用，
+                        并提出宝贵的意见和建议！！！
+                    </p>
+                    <p class="intro-text">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PS：前端太难了qaq，界面丑陋请多包含！！！
+                    </p>
+                    <div class="features">
+                        <h2>V1.0版本特性：</h2>
+                        <ul>
+                            <li><i class="fas fa-check"></i> 已支持所有模型的量化转换操作</li>
+                            <li><i class="fas fa-check"></i> 已完成ModelZoo中YOLO全系列的训练与导出实现</li>
+                            <li><i class="fas fa-clock"></i> 即将支持ResNet系列模型、FCOS等模型</li>
+                        </ul>
+                        <br><br>
+                        <h2 style="display: inline;">项目开源地址：</h2><a href="https://github.com/xiongqi123123/RDK_ToolChain.git">https://github.com/xiongqi123123/RDK_ToolChain.git</a>
+                        <br><br>
+                        <h2 style="display: inline;">BUG或体验反馈：</h2>
+                            <i class="fas fa-envelope"></i> 邮箱：<a href="mailto:xiongqi0412@163.com">xiongqi0412@163.com</a>&nbsp;&nbsp;&nbsp;&nbsp;
+                            <i class="fab fa-github"></i> GitHub Issues：<a href="https://github.com/xiongqi123123/RDK_ToolChain/issues" target="_blank">提交问题反馈</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </main>
     <footer>
         <div class="footer-content">
@@ -57,8 +96,7 @@
                         filename = match[1].replace(/['"]/g, '');
                     }
                 }
-                
-                // 创建Blob并下载
+            
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
