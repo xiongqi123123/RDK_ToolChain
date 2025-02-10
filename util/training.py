@@ -103,6 +103,10 @@ class TrainingProcess:
                         model_config = base_path / "models" / f"{config.model_version}{config.model_size}.pt"
                     else:
                         model_config = base_path / "models" / f"{config.model_version}{config.model_size}-{config.model_tag}.pt"
+                elif config.model_version == 'yolov10':
+                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
+                    train_script = base_path / "train.py"
+                    model_config = base_path / "models" / f"{config.model_version}{config.model_size}.pt"
                 elif config.model_version == 'yolo11':
                     base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
                     train_script = base_path / "train.py"
@@ -113,7 +117,6 @@ class TrainingProcess:
                         model_config = base_path / "models" / f"{config.model_version}{config.model_size}-{config.model_tag}.pt"
                         print(f"使用本地模型文件: {model_config}")
 
-                # 检查文件是否存在
                 if not train_script.exists():
                     raise FileNotFoundError(f"训练脚本不存在: {train_script}")
                 if not model_config.exists():
@@ -121,17 +124,13 @@ class TrainingProcess:
                 if not Path(yaml_path).exists():
                     raise FileNotFoundError(f"数据集配置文件不存在: {yaml_path}")
                 
-                # 切换到训练脚本所在目录
                 os.chdir(base_path)
                 
-                # 获取相对路径
                 rel_model_config = os.path.relpath(model_config, base_path)
                 rel_yaml_path = os.path.relpath(yaml_path, base_path)
                 
-                # 设置设备参数
                 device = "0" if config.device == 'gpu' else "cpu"
                 
-                # 创建保存路径
                 save_dir = base_dir / "logs" / "train_output" / f"{config.model_version}_{config.model_tag}_{config.model_size}"
                 save_dir.mkdir(parents=True, exist_ok=True)
                 
@@ -144,23 +143,21 @@ class TrainingProcess:
                     "--batch-size", str(config.batch_size),
                     "--img", "640",
                     "--device", device,
-                    "--project", str(save_dir),  # 设置保存目录
+                    "--project", str(save_dir), 
                 ]
                 
                 print(f"开始训练: {' '.join(train_cmd)}")
                 
-                # 创建进程
                 self.process = subprocess.Popen(
                     train_cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
-                    bufsize=1,  # 行缓冲
-                    env=dict(os.environ, PYTHONUNBUFFERED="1"),  # 禁用 Python 输出缓冲
+                    bufsize=1,  
+                    env=dict(os.environ, PYTHONUNBUFFERED="1"), 
                     cwd=base_path
                 )
 
-                # 设置非阻塞模式
                 for pipe in [self.process.stdout, self.process.stderr]:
                     if pipe:
                         fd = pipe.fileno()
@@ -182,12 +179,10 @@ class TrainingProcess:
                 return
             
             try:
-                # 先尝试优雅地停止
                 self.process.send_signal(signal.SIGINT)
                 try:
                     self.process.wait(timeout=30)
                 except subprocess.TimeoutExpired:
-                    # 如果超时，强制终止
                     self.process.terminate()
                     self.process.wait()
                 
@@ -210,12 +205,10 @@ class TrainingProcess:
             
             return_code = self.process.poll()
             
-            # 非阻塞方式读取输出
             stdout_data = ""
             stderr_data = ""
             
             try:
-                # 读取所有可用输出
                 if self.process.stdout:
                     try:
                         while True:
@@ -247,7 +240,6 @@ class TrainingProcess:
             print(stderr_data)
             print("================================\n")
             
-            # 解析训练进度
             current_epoch = 0
             if stderr_data:  # 从stderr中解析
                 lines = stderr_data.split('\n')
@@ -266,16 +258,16 @@ class TrainingProcess:
                         
                     # 检查是否是训练进度行
                     parts = line.split()
-                    if len(parts) >= 7:  # 训练输出行通常有7列或更多
+                    if len(parts) >= 7:  
                         try:
                             # 第一部分应该是 "1/99" 这样的格式
                             first_part = parts[0]
                             if '/' in first_part:
                                 current, total = map(int, first_part.split('/'))
-                                if total > 0:  # 确保是有效的epoch数据
+                                if total > 0:  
                                     current_epoch = current
                                     print(f"找到当前epoch: {current_epoch}/{total}")
-                                    break  # 找到最新的epoch就可以退出了
+                                    break  
                         except Exception as e:
                             print(f"解析行时出错: {str(e)}, 行内容: {line}")
                             continue

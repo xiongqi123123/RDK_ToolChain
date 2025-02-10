@@ -2,7 +2,6 @@
 let currentBrowserMode = ''; // 'model' 或 'caldata'
 
 document.addEventListener('DOMContentLoaded', function() {
-    // 表单提交处理
     const conversionForm = document.getElementById('conversionForm');
     conversionForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -15,8 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             const formData = new FormData(conversionForm);
-            
-            // 打印表单数据
             console.log('提交的表单数据:');
             for (let [key, value] of formData.entries()) {
                 console.log(`${key}: ${value}`);
@@ -35,7 +32,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error(`服务器返回错误: ${result.message || '未知错误'}`);
             }
             
-            // 更新转换状态区域
             updateConversionStatus(result);
             
         } catch (error) {
@@ -59,10 +55,7 @@ function updateConversionStatus(data) {
     const conversionControls = document.querySelector('.conversion-controls');
     
     if (data.status === 'success') {
-        // 更新转换状态
         conversionStatus.isConverting = true;
-        
-        // 显示转换配置和状态
         conversionProgress.innerHTML = `
             <div class="status-item">
                 <h3>
@@ -80,7 +73,6 @@ function updateConversionStatus(data) {
             </div>
         `;
         
-        // 显示停止按钮
         conversionControls.style.display = 'flex';
         
         // 开始轮询转换状态
@@ -101,7 +93,6 @@ function updateConversionStatus(data) {
     }
 }
 
-// 轮询转换状态
 function pollConversionStatus() {
     if (!conversionStatus.isConverting) return;
     
@@ -109,7 +100,6 @@ function pollConversionStatus() {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'running') {
-                // 更新状态标签
                 const statusBadge = document.querySelector('.status-badge');
                 statusBadge.className = 'status-badge running';
                 statusBadge.textContent = '正在转换';
@@ -135,7 +125,6 @@ function updateLogOutput(data) {
     const logOutput = document.querySelector('.log-output');
     if (!logOutput) return;
 
-    // 添加新的日志内容
     if (data.stdout) {
         const stdoutDiv = document.createElement('div');
         stdoutDiv.className = 'stdout';
@@ -153,7 +142,6 @@ function updateLogOutput(data) {
     logOutput.scrollTop = logOutput.scrollHeight;
 }
 
-// 更新转换完成状态
 function updateConversionComplete(data) {
     const conversionProgress = document.getElementById('conversionProgress');
     const conversionControls = document.querySelector('.conversion-controls');
@@ -211,7 +199,6 @@ function stopConversion() {
         });
 }
 
-// 文件浏览器相关函数
 function openModelBrowser() {
     currentBrowserMode = 'model';
     const modal = document.getElementById('fileBrowserModal');
@@ -287,7 +274,6 @@ function updateFileList(data) {
     currentPathElement.textContent = data.current_path;
     fileList.innerHTML = '';
     
-    // 添加文件夹
     data.items.filter(item => item.type === 'directory').forEach(item => {
         const div = document.createElement('div');
         div.className = 'file-item folder';
@@ -299,7 +285,6 @@ function updateFileList(data) {
         fileList.appendChild(div);
     });
 
-    // 添加文件(仅当浏览模型文件时)
     if (currentBrowserMode === 'model') {
         data.items.filter(item => item.type === 'file').forEach(item => {
             const div = document.createElement('div');

@@ -16,19 +16,11 @@ def list_directory(path: str, include_files: bool = False, file_pattern: Optiona
         print(f"正在列出目录: {path}")
         print(f"包含文件: {include_files}")
         print(f"文件模式: {file_pattern}")
-        
-        # 确保路径存在
         if not os.path.exists(path):
             raise FileNotFoundError(f"路径不存在: {path}")
-            
-        # 确保是目录
         if not os.path.isdir(path):
             raise NotADirectoryError(f"不是目录: {path}")
-            
-        # 获取目录内容
         items = []
-        
-        # 添加目录
         for item in os.listdir(path):
             item_path = os.path.join(path, item)
             if os.path.isdir(item_path):
@@ -38,11 +30,8 @@ def list_directory(path: str, include_files: bool = False, file_pattern: Optiona
                     'type': 'directory'
                 })
                 print(f"找到目录: {item_path}")
-        
-        # 添加文件（如果需要）
         if include_files:
             if file_pattern:
-                # 处理多个文件模式
                 patterns = [p.strip() for p in file_pattern.strip('{}').split(',')]
                 print(f"处理文件模式: {patterns}")
                 
@@ -71,8 +60,6 @@ def list_directory(path: str, include_files: bool = False, file_pattern: Optiona
                             'type': 'file'
                         })
                         print(f"添加文件: {item_path}")
-                
-        # 按类型和名称排序，并去重
         seen = set()
         unique_items = []
         for item in items:
@@ -99,7 +86,6 @@ def list_directory(path: str, include_files: bool = False, file_pattern: Optiona
 
 def verify_dataset_structure(dataset_path: str) -> None:
     """验证数据集目录结构"""
-    # 检查必需的目录
     required_dirs = [
         os.path.join(dataset_path, 'images', 'train'),
         os.path.join(dataset_path, 'images', 'val'),
@@ -115,12 +101,9 @@ def create_yaml_config(dataset_path: str, num_classes: int, labels: List[str], k
     """创建YAML配置文件"""
     try:
         print(f"创建YAML配置文件: {dataset_path}, {num_classes}, {labels}, {kpt_shape}")
-        # 确保数据集路径存在
         dataset_path = os.path.abspath(dataset_path)
         if not os.path.exists(dataset_path):
             raise FileNotFoundError(f"数据集路径不存在: {dataset_path}")
-            
-        # 检查训练和验证集目录
         train_path = os.path.join(dataset_path, 'images', 'train')
         val_path = os.path.join(dataset_path, 'images', 'val')
         
@@ -128,8 +111,6 @@ def create_yaml_config(dataset_path: str, num_classes: int, labels: List[str], k
             raise FileNotFoundError(f"训练集目录不存在: {train_path}")
         if not os.path.exists(val_path):
             raise FileNotFoundError(f"验证集目录不存在: {val_path}")
-            
-        # 创建配置文件内容
         config = {
             'train': train_path,  # 训练集的绝对路径
             'val': val_path,      # 验证集的绝对路径
@@ -139,7 +120,6 @@ def create_yaml_config(dataset_path: str, num_classes: int, labels: List[str], k
         if kpt_shape:
             config['kpt_shape'] = kpt_shape
         print(config)
-        # 保存配置文件
         config_dir = Path(__file__).parent.parent / "models" / "model_train" / "YOLO" / "yolov5_v2.0" / "data"
         config_dir.mkdir(parents=True, exist_ok=True)
         

@@ -26,14 +26,9 @@ def model_training():
     """模型训练页面"""
     if request.method == 'GET':
         return render_template('model_training.html')
-    
-    # POST请求处理
     try:
-        # 从表单创建配置
         config = TrainingConfig.from_form(request.form)
         config.validate()
-        
-        # 创建数据集配置文件
         kpt_shape = [config.kpt_num, config.kpt_dim] if config.model_tag == 'pose' else None
         yaml_path = create_yaml_config(
             config.dataset_path,
@@ -42,7 +37,6 @@ def model_training():
             kpt_shape
         )
         
-        # 在新线程中启动训练
         def run_training():
             try:
                 training_process.start(config, yaml_path)
@@ -50,7 +44,7 @@ def model_training():
                 print(f"训练过程出错: {str(e)}")
                 
         training_thread = threading.Thread(target=run_training)
-        training_thread.daemon = True  # 设置为守护线程
+        training_thread.daemon = True  
         training_thread.start()
         
         return jsonify({
@@ -96,13 +90,10 @@ def model_export():
     """模型导出页面"""
     if request.method == 'GET':
         return render_template('model_export.html')
-    # POST请求处理
     try:
-        # 从表单创建配置
         config = ExportConfig.from_form(request.form)
         config.validate()
         
-        # 在新线程中启动导出
         def run_export():
             try:
                 exporting_process.start(config)
@@ -110,7 +101,7 @@ def model_export():
                 print(f"导出过程出错: {str(e)}")
                 
         export_thread = threading.Thread(target=run_export)
-        export_thread.daemon = True  # 设置为守护线程
+        export_thread.daemon = True  
         export_thread.start()
         
         return jsonify({
@@ -154,14 +145,9 @@ def model_quantization():
     """模型量化页面"""
     if request.method == 'GET':
         return render_template('model_quantization.html')
-    
-    # POST请求处理
     try:
-        # 从表单创建配置
         config = QuantizationConfig.from_form(request.form)
         config.validate()
-        
-        # 在新线程中启动检查
         def run_checker():
             try:
                 checker_process.start(config)
@@ -169,7 +155,7 @@ def model_quantization():
                 print(f"检查过程出错: {str(e)}")
                 
         checker_thread = threading.Thread(target=run_checker)
-        checker_thread.daemon = True  # 设置为守护线程
+        checker_thread.daemon = True  
         checker_thread.start()
         
         return jsonify({
@@ -211,11 +197,8 @@ def model_conversion():
     
     try:
         print(request.form)
-        # 从表单创建配置
         config = ConversionConfig.from_form_data(request.form)
         config.validate()
-        
-        # 在新线程中启动转换
         def run_conversion():
             try:
                 conversion_process.start(config)
@@ -223,7 +206,7 @@ def model_conversion():
                 print(f"转换过程出错: {str(e)}")
                 
         conversion_thread = threading.Thread(target=run_conversion)
-        conversion_thread.daemon = True  # 设置为守护线程
+        conversion_thread.daemon = True 
         conversion_thread.start()
         
         return jsonify({
@@ -296,7 +279,6 @@ def start_testing():
 
 @app.route('/stop_testing', methods=['POST'])
 def stop_testing():
-    # 这里先返回成功,实际的停止逻辑将在后端实现
     return jsonify({'status': 'success'})
 
 @app.route('/model-detection', methods=['GET', 'POST'])
@@ -304,7 +286,6 @@ def model_detection():
     """模型检测页面"""
     if request.method == 'POST':
         try:
-            # 创建配置对象
             config = DetectionConfig.from_form(request.form)
             
             # 验证配置
@@ -365,8 +346,8 @@ def handle_list_directory():
             }), 400
             
         path = data['path']
-        include_files = data.get('include_files', False)  # 获取include_files参数
-        file_pattern = data.get('file_pattern')  # 获取file_pattern参数
+        include_files = data.get('include_files', False)  
+        file_pattern = data.get('file_pattern')  
         
         result = list_directory(
             path=path,

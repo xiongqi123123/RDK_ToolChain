@@ -68,45 +68,43 @@ class ExportProcess:
                 elif config.model_version == 'yolov8':
                     base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
                     export_script = base_path / "export.py"
+                elif config.model_version == 'yolov10':
+                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
+                    export_script = base_path / "export.py"
                 elif config.model_version == 'yolo11':
                     base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
                     export_script = base_path / "export.py"
                 
-                # 检查文件是否存在
+
                 if not export_script.exists():
                     raise FileNotFoundError(f"导出脚本不存在: {export_script}")
-                
-                # 切换到导出脚本所在目录
+
                 os.chdir(base_path)
-                
-                # 构建导出命令
+
                 export_cmd = [
                     "python3",
                     "export.py",
                     "--weights", config.model_path,
-                    "--img-size", "640",  # 添加默认图像大小
-                    "--batch-size", "1"    # 添加默认批次大小
+                    "--img-size", "640",  
+                    "--batch-size", "1"   
                 ]
                 
-                # 根据导出格式添加相应参数
-                if config.export_format == 'onnx':
-                    # v2.0版本会自动导出为ONNX格式，不需要额外参数
-                    pass
+                # if config.export_format == 'onnx':
+                #     # v2.0版本会自动导出为ONNX格式，不需要额外参数
+                #     pass
                 
                 print(f"开始导出: {' '.join(export_cmd)}")
-                
-                # 创建进程
+
                 self.process = subprocess.Popen(
                     export_cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
                     bufsize=1,  # 行缓冲
-                    env=dict(os.environ, PYTHONUNBUFFERED="1"),  # 禁用Python输出缓冲
+                    env=dict(os.environ, PYTHONUNBUFFERED="1"), 
                     cwd=base_path
                 )
 
-                # 设置非阻塞模式
                 for pipe in [self.process.stdout, self.process.stderr]:
                     if pipe:
                         fd = pipe.fileno()
@@ -128,12 +126,10 @@ class ExportProcess:
                 return
             
             try:
-                # 先尝试优雅地停止
                 self.process.send_signal(signal.SIGINT)
                 try:
                     self.process.wait(timeout=30)
                 except subprocess.TimeoutExpired:
-                    # 如果超时，强制终止
                     self.process.terminate()
                     self.process.wait()
                 
@@ -155,23 +151,19 @@ class ExportProcess:
                 }
             
             return_code = self.process.poll()
-            
-            # 非阻塞方式读取输出
+
             stdout_data = ""
             stderr_data = ""
             
             try:
-                # 读取所有可用输出
                 if self.process.stdout:
                     try:
                         while True:
                             line = self.process.stdout.readline()
                             if not line:
                                 break
-                            # 保持ANSI颜色代码并添加换行符
                             line = line.rstrip('\n')
                             print(f"导出输出: {line}")
-                            # 确保每行输出都有正确的换行
                             stdout_data += line + '\n'
                     except (IOError, OSError) as e:
                         print(f"读取标准输出时出错: {str(e)}")
@@ -183,10 +175,8 @@ class ExportProcess:
                             line = self.process.stderr.readline()
                             if not line:
                                 break
-                            # 保持ANSI颜色代码并添加换行符
                             line = line.rstrip('\n')
                             print(f"导出错误: {line}")
-                            # 确保每行错误输出都有正确的换行
                             stderr_data += line + '\n'
                     except (IOError, OSError) as e:
                         print(f"读取错误输出时出错: {str(e)}")
@@ -195,16 +185,13 @@ class ExportProcess:
             except Exception as e:
                 print(f"读取输出时发生错误: {str(e)}")
 
-            # 确保输出不为空
             if not stdout_data:
                 stdout_data = "等待输出...\n"
             if not stderr_data:
                 stderr_data = ""
 
-            # 解析导出进度
             progress = 0
             if stdout_data:
-                # 更详细的进度解析
                 if "Loading weights from" in stdout_data:
                     progress = 10
                 elif "PyTorch: starting from" in stdout_data:
@@ -216,7 +203,6 @@ class ExportProcess:
                 elif "Export complete" in stdout_data:
                     progress = 100
             
-            # 构建返回数据
             result = {
                 'status': 'running',
                 'message': '导出进行中',

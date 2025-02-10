@@ -180,7 +180,7 @@ main {
 }
 
 .training-status {
-    flex: 1; /* 占据剩余空间 */
+    flex: 1;
     background-color: #fff;
     padding: 2rem;
     border-radius: 8px;

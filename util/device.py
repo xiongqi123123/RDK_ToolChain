@@ -1,7 +1,6 @@
 import torch
 
 def detect_device():
-    """检测可用的计算设备"""
     # 检测是否有可用的CUDA设备
     gpu_available = torch.cuda.is_available()
     cuda_device_count = torch.cuda.device_count() if gpu_available else 0

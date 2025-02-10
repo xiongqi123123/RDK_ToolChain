@@ -82,17 +82,6 @@ const modelConfigs = {
                             { value: "l", label: "l" },
                             { value: "x", label: "x" }
                         ]
-                    },
-                    {
-                        value: "pose",
-                        label: "YOLOv10-Pose",
-                        sizes: [
-                            { value: "n", label: "n" },
-                            { value: "s", label: "s" },
-                            { value: "m", label: "m" },
-                            { value: "l", label: "l" },
-                            { value: "x", label: "x" }
-                        ]
                     }
                 ]
             },
@@ -292,7 +281,6 @@ function updateTrainingStatus(data) {
     const trainingControls = document.querySelector('.training-controls');
     
     if (data.status === 'success') {
-        // 更新训练状态
         trainingStatus.isTraining = true;
         trainingStatus.totalEpochs = data.config.epochs;
         
@@ -416,7 +404,6 @@ function pollTrainingStatus() {
         })
         .catch(error => {
             console.error('获取训练状态失败:', error);
-            // 如果是404错误，说明后端API还没准备好，等待更长时间
             const retryTime = error.message.includes('404') ? 5000 : 1000;
             setTimeout(pollTrainingStatus, retryTime);
         });
@@ -479,11 +466,9 @@ function stopTraining() {
         });
 }
 
-// 文件浏览器相关变量
 let currentPath = '/';
 const modal = document.getElementById('fileBrowserModal');
 
-// 打开文件浏览器
 function openFileBrowser() {
     modal.style.display = 'block';
     loadDirectory(currentPath);

@@ -23,14 +23,12 @@
     <div class="training-status">
         <h2>检测状态</h2>
         <div id="detectionProgress">
-            <!-- 检测进度和状态将在这里动态显示 -->
         </div>
         <div class="detection-controls" style="display: none;">
             <button type="button" class="stop-btn" onclick="stopDetection()">
                 <i class="fas fa-stop"></i> 停止检测
             </button>
         </div>
-        <!-- 添加性能分析图显示区域 -->
         <div id="perfImage" style="display: none;">
             <h3>模型可视化图</h3>
             <img id="perfImageDisplay" src="" alt="模型可视化图" style="max-width: 100%; margin-top: 10px;">
@@ -38,7 +36,6 @@
     </div>
 </div>
 
-<!-- 添加文件浏览器模态框 -->
 <div id="fileBrowserModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -56,7 +53,6 @@
                     </button>
                 </div>
                 <div class="file-list" id="fileList">
-                    <!-- 文件列表将通过JavaScript动态填充 -->
                 </div>
             </div>
         </div>

@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeForm();
 });
 
-// 初始化WebSocket连接
 function initializeWebSocket() {
     socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
     
@@ -27,7 +26,6 @@ function initializeWebSocket() {
     });
 }
 
-// 初始化文件浏览器
 function initializeFileBrowser() {
     const modal = document.getElementById('fileBrowserModal');
     const closeBtn = modal.querySelector('.close');
@@ -50,7 +48,6 @@ function initializeForm() {
     };
 }
 
-// 打开模型文件浏览器
 function openModelBrowser() {
     currentBrowserTarget = 'model';
     document.getElementById('browserTitle').textContent = '选择模型文件';

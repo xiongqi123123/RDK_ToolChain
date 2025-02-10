@@ -24,7 +24,6 @@
         <div id="nodeSelection" style="display: none; margin-top: 20px;">
             <h3>检测到的反量化节点</h3>
             <div class="node-list" style="max-height: 300px; overflow-y: auto; margin: 10px 0;">
-                <!-- 节点列表将在这里动态显示 -->
             </div>
             <div class="form-actions">
                 <button type="button" class="submit-btn" onclick="startRemove()">开始移除</button>
@@ -35,7 +34,6 @@
     <div class="training-status">
         <h2>操作状态</h2>
         <div id="deleteProgress">
-            <!-- 进度和状态将在这里动态显示 -->
         </div>
         <div class="delete-controls" style="display: none;">
             <button type="button" class="stop-btn" onclick="stopProcess()">
@@ -45,12 +43,10 @@
     </div>
 </div>
 
-<!-- 添加文件浏览器模态框 -->
 <div id="fileBrowserModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
             <h3>选择模型文件</h3>
-            <!-- <span class="close">&times;</span> -->
         </div>
         <div class="modal-body">
             <div class="file-browser">
@@ -63,7 +59,6 @@
                     </button>
                 </div>
                 <div class="file-list" id="fileList">
-                    <!-- 文件列表将通过JavaScript动态填充 -->
                 </div>
             </div>
         </div>

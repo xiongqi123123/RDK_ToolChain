@@ -27,18 +27,16 @@ class ConversionConfig:
             # 处理节点信息
             node_info = {}
             if 'nodePath[]' in form_data:
-                # 如果是列表，则使用 getlist 获取所有值
                 paths = form_data.getlist('nodePath[]')
                 input_types = form_data.getlist('nodeInputType[]')
                 output_types = form_data.getlist('nodeOutputType[]')
                 
-                # 将数组转换为字典格式
                 for i in range(len(paths)):
-                    if paths[i]:  # 只处理非空路径
+                    if paths[i]:  
                         node_info[paths[i]] = {
-                            'ON': 'BPU',  # 添加 ON 字段
-                            'InputType': input_types[i],  # 修改为 InputType
-                            'OutputType': output_types[i]  # 修改为 OutputType
+                            'ON': 'BPU',  
+                            'InputType': input_types[i],  
+                            'OutputType': output_types[i]  
                         }
             return cls(
                 model_path=form_data['modelPath'],
@@ -54,7 +52,6 @@ class ConversionConfig:
             raise ValueError(f'表单数据无效: {str(e)}')
 
     def validate(self):
-        """验证配置参数"""
         if not self.model_path:
             raise ValueError("模型文件路径不能为空")
             
@@ -84,7 +81,6 @@ class ConversionConfig:
 
     def generate_yaml(self) -> str:
         """生成YAML配置文件"""
-        # 创建基本配置
         base_dir = Path(__file__).parent.parent.absolute()
         work_dir = base_dir / "logs" / "convert_output"
         work_dir.mkdir(parents=True, exist_ok=True)
@@ -96,7 +92,7 @@ class ConversionConfig:
                 'layer_out_dump': False,
                 'working_dir': str(work_dir),
                 'output_model_file_prefix': 'converted_model',
-                'node_info': self.node_info  # 直接使用字典，不要转换为字符串
+                'node_info': self.node_info  # 直接使用字典
             },
             'input_parameters': {
                 'input_type_rt': self.input_type_rt,
@@ -145,9 +141,7 @@ class ConversionProcess:
             line = line.strip()
             if not line:
                 continue
-                
-            # 保留所有输出,方便调试
-            filtered_lines.append(line)
+            filtered_lines.append(line)# 保留所有输出,方便调试
                 
         return "\n".join(filtered_lines)
 
@@ -162,7 +156,6 @@ class ConversionProcess:
                 self._output_dir = os.path.join(os.getcwd(), 'logs', 'convert_output')
                 os.makedirs(self._output_dir, exist_ok=True)
                 
-                # 生成YAML配置文件
                 self._yaml_file = config.generate_yaml()
                 print(f"\n=== 配置信息 ===")
                 print(f"YAML配置文件: {self._yaml_file}")
@@ -170,8 +163,6 @@ class ConversionProcess:
                 
                 if not os.path.exists(self._yaml_file):
                     raise FileNotFoundError(f"配置文件未生成: {self._yaml_file}")
-                
-                # 构建转换命令
                 convert_cmd = [
                     "hb_mapper",
                     "makertbin",
@@ -182,14 +173,13 @@ class ConversionProcess:
                 print(f"\n=== 执行命令 ===")
                 print(f"命令: {' '.join(convert_cmd)}")
                 
-                # 创建进程
                 self.process = subprocess.Popen(
                     convert_cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
-                    bufsize=1,  # 行缓冲
-                    env=dict(os.environ, PYTHONUNBUFFERED="1")  # 禁用Python输出缓冲
+                    bufsize=1, 
+                    env=dict(os.environ, PYTHONUNBUFFERED="1")  
                 )
 
                 # 设置非阻塞模式
@@ -218,13 +208,11 @@ class ConversionProcess:
             
             try:
                 print("\n=== 停止进程 ===")
-                # 先尝试优雅地停止
                 self.process.send_signal(signal.SIGINT)
                 try:
                     self.process.wait(timeout=30)
                     print("进程已正常停止")
                 except subprocess.TimeoutExpired:
-                    # 如果超时，强制终止
                     print("进程未响应,强制终止")
                     self.process.terminate()
                     self.process.wait()
@@ -237,7 +225,6 @@ class ConversionProcess:
                 print(f"停止失败: {str(e)}")
                 raise
             finally:
-                # 清理临时文件
                 if self._yaml_file and os.path.exists(self._yaml_file):
                     try:
                         os.unlink(self._yaml_file)
@@ -301,7 +288,7 @@ class ConversionProcess:
                 print(f"\n=== 错误 ===")
                 print(error_msg)
             
-            # 检查进程状态
+
             if return_code is None:
                 # 进程仍在运行
                 status_data = {
@@ -353,6 +340,3 @@ class ConversionProcess:
 
 # 全局转换进程管理器
 conversion_process = ConversionProcess()
-
-# 全局转换进程管理器
-# conversion_process = ConversionProcess() 

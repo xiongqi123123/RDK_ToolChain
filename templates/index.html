@@ -87,7 +87,6 @@
         try {
             const response = await fetch('/download-logs');
             if (response.ok) {
-                // 获取文件名
                 const contentDisposition = response.headers.get('Content-Disposition');
                 let filename = 'logs.zip';
                 if (contentDisposition) {

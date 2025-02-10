@@ -58,7 +58,6 @@ class CheckerProcess:
                 raise RuntimeError("已有检查进程在运行")
 
             try:
-                # 构建检查命令
                 base_dir = Path(__file__).parent.parent.absolute()
                 work_dir = base_dir / "logs" / "checker_output"
                 work_dir.mkdir(parents=True, exist_ok=True)
@@ -73,19 +72,15 @@ class CheckerProcess:
                 
                 print(f"开始检查: {' '.join(checker_cmd)}")
                 print(f"工作目录: {work_dir}")
-                
-                # 创建进程
                 self.process = subprocess.Popen(
                     checker_cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
-                    bufsize=1,  # 行缓冲
-                    env=dict(os.environ, PYTHONUNBUFFERED="1"),  # 禁用Python输出缓冲
-                    cwd=str(work_dir)  # 设置工作目录
+                    bufsize=1, 
+                    env=dict(os.environ, PYTHONUNBUFFERED="1"),  
+                    cwd=str(work_dir) 
                 )
-
-                # 设置非阻塞模式
                 for pipe in [self.process.stdout, self.process.stderr]:
                     if pipe:
                         fd = pipe.fileno()
@@ -107,12 +102,10 @@ class CheckerProcess:
                 return
             
             try:
-                # 先尝试优雅地停止
                 self.process.send_signal(signal.SIGINT)
                 try:
                     self.process.wait(timeout=30)
                 except subprocess.TimeoutExpired:
-                    # 如果超时，强制终止
                     self.process.terminate()
                     self.process.wait()
                 
@@ -142,12 +135,10 @@ class CheckerProcess:
             print(f"\n=== 进程状态 ===")
             print(f"返回码: {return_code}")
             
-            # 非阻塞方式读取输出
             stdout_data = ""
             stderr_data = ""
             
             try:
-                # 读取所有可用输出
                 if self.process.stdout:
                     try:
                         print("\n=== 标准输出 ===")
@@ -179,7 +170,6 @@ class CheckerProcess:
                 print(f"\n=== 错误 ===")
                 print(error_msg)
             
-            # 解析和过滤输出
             filtered_stdout = self._filter_output(stdout_data)
             filtered_stderr = self._filter_output(stderr_data)
             

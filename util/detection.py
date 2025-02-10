@@ -17,7 +17,6 @@ class DetectionConfig:
 
     @classmethod
     def from_form(cls, form_data) -> 'DetectionConfig':
-        """从表单数据创建配置对象"""
         try:
             return cls(
                 model_path=form_data.get('modelPath', '')
@@ -26,7 +25,6 @@ class DetectionConfig:
             raise ValueError(f"配置参数无效: {str(e)}")
 
     def validate(self):
-        """验证配置参数"""
         if not self.model_path:
             raise ValueError("模型文件路径不能为空")
             
@@ -67,7 +65,6 @@ class DetectionProcess:
             ]):
                 continue
                 
-            # 处理模型基本信息
             if "model file has" in line:
                 filtered_lines.append("\n=== 模型信息 ===")
                 is_model_info = True
@@ -80,26 +77,22 @@ class DetectionProcess:
                 if "[model name]" in line:
                     filtered_lines.append(f"模型名称: {line.split(':')[1].strip()}")
                     continue
-                    
-                # 处理输入信息
+                   
                 if "input[" in line:
                     current_section = "输入"
                     filtered_lines.append(f"\n{current_section}信息:")
                     continue
-                    
-                # 处理输出信息
+            
                 if "output[" in line:
                     current_section = "输出"
                     filtered_lines.append(f"\n{current_section}信息:")
                     continue
-                    
-                # 处理具体参数
+                
                 if current_section and ":" in line:
                     key, value = line.split(":", 1)
                     key = key.strip()
                     value = value.strip()
                     
-                    # 翻译常见参数名
                     key_map = {
                         "name": "名称",
                         "input source": "输入来源",
@@ -114,7 +107,6 @@ class DetectionProcess:
                     
                     key = key_map.get(key, key)
                     
-                    # 美化一些特殊值
                     if "NONE" in value:
                         value = "无"
                     elif "HB_DNN" in value:
@@ -132,28 +124,24 @@ class DetectionProcess:
                 raise RuntimeError("已有检测进程在运行")
 
             try:
-                # 设置工作目录
+                
                 base_dir = Path(__file__).parent.parent
                 self._work_dir = base_dir / "logs" / "detection_output"
                 self._work_dir.mkdir(parents=True, exist_ok=True)
-                
-                # 设置环境变量
+        
                 env = os.environ.copy()
                 
-                # 使用项目内的工具和库文件路径
                 util_dir = os.path.dirname(__file__)
                 host_dir = os.path.join(util_dir, 'host')
                 hrt_tools_dir = os.path.join(host_dir, 'hrt_tools')
                 dnn_lib_dir = os.path.join(host_dir, 'host_package/x5_x86_64_gcc_11.4.0/dnn_x86/lib')
                 
-                # 更新环境变量
                 env.update({
                     "LD_LIBRARY_PATH": f"{env.get('LD_LIBRARY_PATH', '')}:{hrt_tools_dir}:{dnn_lib_dir}"
                 })
 
-                # 第一步：执行hb_perf命令生成可视化图
                 perf_cmd = [
-                    "hb_perf",  # 直接使用命令，不指定完整路径
+                    "hb_perf", 
                     config.model_path
                 ]
                 print(f"执行模型可视化: {' '.join(perf_cmd)}")
@@ -163,15 +151,13 @@ class DetectionProcess:
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
                     check=True,
-                    env=env,  # 使用更新后的环境变量
-                    cwd=str(self._work_dir)  # 设置工作目录
+                    env=env, 
+                    cwd=str(self._work_dir) 
                 )
                 
-                # 检查hb_perf命令的输出
                 if perf_process.returncode != 0:
                     raise RuntimeError(f"模型可视化失败: {perf_process.stderr}")
-                
-                # 第二步：执行hrt_model_exec命令获取模型信息
+
                 hrt_exec_path = os.path.join(hrt_tools_dir, 'hrt_model_exec')
                 info_cmd = [
                     hrt_exec_path,
@@ -181,18 +167,17 @@ class DetectionProcess:
                 ]
                 print(f"获取模型信息: {' '.join(info_cmd)}")
                 
-                # 创建进程
                 self.process = subprocess.Popen(
                     info_cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
-                    bufsize=1,  # 行缓冲
-                    env=env,  # 使用更新后的环境变量
-                    cwd=str(self._work_dir)  # 设置工作目录
+                    bufsize=1,  
+                    env=env,  
+                    cwd=str(self._work_dir)  
                 )
 
-                # 设置非阻塞模式
+
                 for pipe in [self.process.stdout, self.process.stderr]:
                     if pipe:
                         fd = pipe.fileno()
@@ -218,12 +203,12 @@ class DetectionProcess:
                 return
             
             try:
-                # 先尝试优雅地停止
+
                 self.process.send_signal(signal.SIGINT)
                 try:
                     self.process.wait(timeout=30)
                 except subprocess.TimeoutExpired:
-                    # 如果超时，强制终止
+
                     self.process.terminate()
                     self.process.wait()
                 
@@ -252,13 +237,11 @@ class DetectionProcess:
             return_code = self.process.poll()
             print(f"\n=== 进程状态 ===")
             print(f"返回码: {return_code}")
-            
-            # 非阻塞方式读取输出
+
             stdout_data = ""
             stderr_data = ""
             
             try:
-                # 读取所有可用输出
                 if self.process.stdout:
                     try:
                         print("\n=== 标准输出 ===")
@@ -290,7 +273,6 @@ class DetectionProcess:
                 print(f"\n=== 错误 ===")
                 print(error_msg)
             
-            # 解析和过滤输出
             filtered_stdout = self._filter_output(stdout_data)
             filtered_stderr = self._filter_output(stderr_data)
             
@@ -340,22 +322,18 @@ class DetectionProcess:
             return status_data
 
     def _find_perf_image(self) -> Optional[str]:
-        """查找模型可视化图片"""
         try:
             if not self._work_dir:
                 print("工作目录未设置")
                 return None
 
-            # 查找 hb_perf_result 目录
             perf_dir = self._work_dir / 'hb_perf_result'
             if not perf_dir.exists():
                 print(f"模型可视化目录不存在: {perf_dir}")
                 return None
-                
-            # 遍历子目录
+            
             for model_dir in perf_dir.iterdir():
                 if model_dir.is_dir():
-                    # 查找 .png 文件
                     for file in model_dir.iterdir():
                         if file.suffix.lower() == '.png':
                             # 返回相对于工作目录的路径

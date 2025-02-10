@@ -107,15 +107,10 @@ function pollCheckerStatus() {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'running') {
-                // 更新状态标签
                 const statusBadge = document.querySelector('.status-badge');
                 statusBadge.className = 'status-badge running';
                 statusBadge.textContent = '正在检查';
-                
-                // 更新日志
                 updateLogOutput(data);
-                
-                // 继续轮询
                 setTimeout(pollCheckerStatus, 1000);
             } else if (data.status === 'completed') {
                 updateCheckerComplete(data);
@@ -132,29 +127,23 @@ function pollCheckerStatus() {
 function updateLogOutput(data) {
     const logOutput = document.getElementById('log-output');
     logOutput.innerHTML = '';
-
-    // 处理stderr输出
     if (data.stderr) {
         const lines = data.stderr.split('\n');
         lines.forEach(line => {
             if (line.trim()) {
                 const logLine = document.createElement('div');
                 
-                // 处理不同类型的日志行
                 if (line.includes('='.repeat(20))) {
                     logLine.className = 'log-separator';
-                    // 移除多余的等号,只保留必要的分隔线
-                    line = line.replace(/={20,}/g, '='.repeat(20));
+                    line = line.replace(/={20,}/g, '='.repeat(20)); // 移除多余的等号,只保留必要的分隔线
                 } else if (line.includes('-'.repeat(10))) {
                     logLine.className = 'log-subseparator';
-                    // 移除多余的横线,只保留必要的分隔线
-                    line = line.replace(/-{10,}/g, '-'.repeat(10));
+                    line = line.replace(/-{10,}/g, '-'.repeat(10)); // 移除多余的横线,只保留必要的分隔线
                 } else if (line.includes('INFO:')) {
                     logLine.className = 'log-info';
                 } else if (line.trim().startsWith('Node')) {
                     logLine.className = 'log-node';
-                    // 压缩Node信息行中的空格
-                    line = line.replace(/\s+/g, ' ');
+                    line = line.replace(/\s+/g, ' '); // 压缩Node信息行中的空格
                 } else {
                     logLine.className = 'log-normal';
                 }
@@ -165,7 +154,6 @@ function updateLogOutput(data) {
         });
     }
 
-    // 处理stdout输出
     if (data.stdout) {
         const lines = data.stdout.split('\n');
         lines.forEach(line => {
@@ -197,10 +185,8 @@ function updateCheckerComplete(data) {
     // 显示最终日志
     const logOutput = document.querySelector('.log-output');
     if (logOutput) {
-        // 清空现有日志
         logOutput.innerHTML = '';
-        
-        // 添加stderr输出
+
         if (data.stderr) {
             const lines = data.stderr.split('\n');
             lines.forEach(line => {
@@ -223,7 +209,6 @@ function updateCheckerComplete(data) {
             });
         }
         
-        // 添加stdout输出
         if (data.stdout) {
             const lines = data.stdout.split('\n');
             lines.forEach(line => {
@@ -277,7 +262,6 @@ function stopChecker() {
         });
 }
 
-// 文件浏览器相关函数
 function openFileBrowser() {
     const modal = document.getElementById('fileBrowserModal');
     modal.style.display = 'block';

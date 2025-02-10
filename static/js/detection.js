@@ -60,10 +60,8 @@ function updateDetectionStatus(data) {
     const perfImage = document.getElementById('perfImage');
     
     if (data.status === 'success') {
-        // 更新检测状态
         detectionStatus.isDetecting = true;
-        
-        // 显示检测配置和状态
+
         detectionProgress.innerHTML = `
             <div class="status-item">
                 <h3>

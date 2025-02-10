@@ -168,8 +168,6 @@ function updateSizeOptions(modelSeries, selectedVersion, selectedTag) {
     });
 }
 
-// 文件选择处理
-// 在DOMContentLoaded事件中更新事件监听器
 document.addEventListener('DOMContentLoaded', function() {
     // 模型系列选择事件
     const modelSeriesSelect = document.getElementById('modelSeries');
@@ -227,8 +225,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!response.ok) {
                 throw new Error(`服务器返回错误: ${result.message || '未知错误'}`);
             }
-            
-            // 更新导出状态区域
             updateExportStatus(result);
             
         } catch (error) {
@@ -277,13 +273,9 @@ function updateExportStatus(data) {
             </div>
         `;
         
-        // 显示停止按钮
-        exportControls.style.display = 'flex';
-        
-        // 开始轮询导出状态
-        pollExportStatus();
+        exportControls.style.display = 'flex'; // 显示停止按钮
+        pollExportStatus(); // 开始轮询导出状态
     } else {
-        // 显示错误信息
         exportProgress.innerHTML = `
             <div class="status-item">
                 <h3>
@@ -306,22 +298,18 @@ function pollExportStatus() {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'running') {
-                // 更新状态标签
                 const statusBadge = document.querySelector('.status-badge');
                 statusBadge.className = 'status-badge running';
                 statusBadge.textContent = '正在导出';
                 
-                // 更新进度条
                 const progressBar = document.querySelector('.progress-bar');
                 if (data.progress !== undefined) {
                     progressBar.style.width = `${data.progress}%`;
                     progressBar.textContent = `${data.progress.toFixed(1)}%`;
                 }
                 
-                // 更新日志
                 const logOutput = document.querySelector('.log-output');
                 if (data.stdout || data.stderr) {
-                    // 清空之前的日志内容
                     logOutput.innerHTML = '';
                     
                     // 添加标准输出
@@ -410,7 +398,6 @@ function stopExport() {
         });
 }
 
-// 文件浏览器相关函数
 function openFileBrowser() {
     const modal = document.getElementById('fileBrowserModal');
     modal.style.display = 'block';

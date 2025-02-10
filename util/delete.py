@@ -51,7 +51,7 @@ class DeleteProcess:
         print(f"开始解析日志文本:\n{log_text}")
         
         try:
-            # 读取日志文件
+
             base_dir = Path(__file__).parent.parent
             log_file = base_dir / "logs" / "delete_output" / "hb_model_modifier.log"
             if log_file.exists():
@@ -59,9 +59,8 @@ class DeleteProcess:
                     log_content = f.read()
                 print(f"读取日志文件内容:\n{log_content}")
                 
-                # 解析节点信息
                 nodes = []
-                # 使用正则表达式匹配节点信息
+
                 pattern = r'input:\s*"([^"]+)"\s*\ninput:\s*"([^"]+)"\s*\noutput:\s*"([^"]+)"\s*\nname:\s*"([^"]+)"\s*\nop_type:\s*"Dequantize"'
                 matches = re.finditer(pattern, log_content, re.MULTILINE)
                 
@@ -101,7 +100,7 @@ class DeleteProcess:
                 self._work_dir.mkdir(parents=True, exist_ok=True)
                 print(f"工作目录: {self._work_dir}")
                 
-                # 执行检测命令
+
                 cmd = [
                     "hb_model_modifier",
                     config.model_path
@@ -109,13 +108,13 @@ class DeleteProcess:
                 print(f"执行节点检测命令: {' '.join(cmd)}")
                 print(f"当前工作目录: {os.getcwd()}")
                 
-                # 创建进程
+
                 self.process = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
-                    bufsize=1,  # 行缓冲
+                    bufsize=1, 
                     cwd=str(self._work_dir)
                 )
                 print(f"进程已启动，PID: {self.process.pid}")
@@ -142,14 +141,12 @@ class DeleteProcess:
                 raise RuntimeError("已有移除进程在运行")
 
             try:
-                # 构建移除命令
                 cmd = ["hb_model_modifier", config.model_path]
                 for node in config.nodes_to_remove:
                     cmd.extend(["-r", node])
                 
                 print(f"执行节点移除: {' '.join(cmd)}")
                 
-                # 创建进程
                 self.process = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
@@ -159,7 +156,6 @@ class DeleteProcess:
                     cwd=str(self._work_dir)
                 )
 
-                # 设置非阻塞模式
                 for pipe in [self.process.stdout, self.process.stderr]:
                     if pipe:
                         fd = pipe.fileno()
@@ -181,12 +177,11 @@ class DeleteProcess:
                 return
             
             try:
-                # 先尝试优雅地停止
                 self.process.send_signal(signal.SIGINT)
                 try:
                     self.process.wait(timeout=30)
                 except subprocess.TimeoutExpired:
-                    # 如果超时，强制终止
+
                     self.process.terminate()
                     self.process.wait()
                 
@@ -213,7 +208,6 @@ class DeleteProcess:
             stderr_data = ""
             
             try:
-                # 读取所有可用输出
                 if self.process.stdout:
                     try:
                         while True:
