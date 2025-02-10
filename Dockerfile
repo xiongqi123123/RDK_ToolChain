@@ -41,6 +41,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
        cython3 \
        python3-numpy \
        git \
+       python3.10-venv \
     && rm -rf /var/lib/apt/lists/* \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
     && update-alternatives --set python3 /usr/bin/python3.10 \
@@ -83,10 +84,18 @@ COPY . .
 # 确保CUDA相关库文件存在并更新库缓存
 RUN ldconfig && \
     ln -s /usr/lib/x86_64-linux-gnu/libcudnn.so.8 /usr/local/cuda/lib64/libcudnn.so.8
+RUN python3 -m venv /opt/label-studio && \
+    . /opt/label-studio/bin/activate && \
+    pip install --no-cache-dir label-studio==1.11.0 && \
+    deactivate
+
+# 复制并设置启动脚本权限
+COPY start_services.sh /app/
+RUN chmod +x /app/start_services.sh
 
 # 暴露端口
-EXPOSE 5000
+EXPOSE 5000 8080
 
-# 启动命令
-CMD ["flask", "run", "--host=0.0.0.0"]
+# 使用启动脚本
+CMD ["/app/start_services.sh"]
 

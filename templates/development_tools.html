@@ -1,1 +1,61 @@
 {% extends "index.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/development_tools.css') }}">
+<div class="content">
+    <div class="tools-container">
+        <h2>开发工具链接</h2>
+        <div class="tools-list">
+            <div class="tool-item">
+                <h3>数据标注平台</h3>
+                <p>本地开源数据标注平台</p>
+                <a href="http://localhost:8080" target="_blank" class="tool-link">
+                    <i class="fas fa-external-link-alt"></i> 访问标注平台
+                </a>
+            </div>
+
+            <div class="tool-item">
+                <h3>开发者社区</h3>
+                <p>地瓜机器人开发者官方社区</p>
+                <a href="https://developer.d-robotics.cc/" target="_blank" class="tool-link">
+                    <i class="fas fa-external-link-alt"></i> 访问开发者社区
+                </a>
+            </div>
+
+            <div class="tool-item">
+                <h3>RDK文档中心</h3>
+                <p>RDK开发文档与API参考</p>
+                <a href="https://developer.d-robotics.cc/information" target="_blank" class="tool-link">
+                    <i class="fas fa-external-link-alt"></i> 访问文档中心
+                </a>
+            </div>
+
+            <div class="tool-item">
+                <h3>ModelZoo</h3>
+                <p>RDK模型仓库</p>
+                <a href="https://github.com/D-Robotics/rdk_model_zoo" target="_blank" class="tool-link">
+                    <i class="fas fa-external-link-alt"></i> 访问ModelZoo
+                </a>
+            </div>
+
+            <div class="tool-item">
+                <h3>Github加速器</h3>
+                <p>Github加速器可以加速clone、curl&wget</p>
+                <a href="https://github.akams.cn/" target="_blank" class="tool-link">
+                    <i class="fas fa-external-link-alt"></i> 访问Github加速器
+                </a>
+            </div>
+
+            <div class="tool-item">
+                <h3>Ultralytics</h3>
+                <p>ultralytics官方首页</p>
+                <a href="https://ultralytics.com/" target="_blank" class="tool-link">
+                    <i class="fas fa-external-link-alt"></i> 访问Ultralytics
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
