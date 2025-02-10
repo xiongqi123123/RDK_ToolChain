@@ -76,8 +76,8 @@ COPY deps/wheels/*.whl ./deps/wheels/
 COPY requirements_docker.txt .
 
 # 修改安装命令，分开执行
-RUN pip install --no-cache-dir --no-deps --ignore-installed -r requirements_docker.txt
-
+# RUN pip install --no-cache-dir --no-deps --ignore-installed -r requirements_docker.txt
+RUN pip install --no-cache-dir --ignore-installed -r requirements_docker.txt
 # 复制项目文件
 COPY . .
 

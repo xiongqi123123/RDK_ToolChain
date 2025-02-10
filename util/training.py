@@ -135,7 +135,7 @@ class TrainingProcess:
                 save_dir.mkdir(parents=True, exist_ok=True)
                 
                 train_cmd = [
-                    "python",
+                    "python3",
                     "train.py",
                     "--cfg", rel_model_config,
                     "--data", rel_yaml_path,

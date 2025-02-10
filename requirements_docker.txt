@@ -1,43 +1,65 @@
-# 基础依赖
+# 基础环境依赖
 pip==24.0
 setuptools
 wheel
-numpy==1.23.0
-Cython==0.29.33
-# pycocotools==2.0.3
+typing-extensions
+multiprocess
 
-# AI相关
+# 科学计算和数据处理
+numpy==1.23.0
+scipy==1.9.1
+Cython==0.29.33
+numba==0.56.4
+msgpack-numpy
+absl-py==1.3.0
+thop
+
+# 深度学习框架
 torch==1.13.0
 torchvision==0.14.0
 tensorboard==2.11.1
+onnx==1.15.0
+onnxruntime==1.16.2
+
+# 图像处理
 opencv-python==4.6.0.66
 Pillow==9.3.0
 matplotlib==3.5.3
-scipy==1.9.1
-tqdm==4.67.1
-PyYAML==6.0.1
-
-# 图像处理
 imageio==2.27.0
 scikit-image==0.19.0
 
-# 工具依赖
+# 工具和可视化
+tqdm==4.67.1
+PyYAML==6.0.1
 click==7.1.2
 easydict==1.7
 graphviz==0.8.4
-Jinja2==3.1.2
-MarkupSafe==2.1.1
+pydot
 netron
-onnx==1.15.0
-numba==0.56.4
-packaging==21.3
 plotly==5.11.0
-protobuf==3.20.3
-requests==2.22.0
 tabulate==0.9.0
 termcolor==2.1.1
 
-# Horizon相关
+# Web服务相关
+Flask==2.0.3
+Werkzeug==2.0.3
+Jinja2==3.1.2
+MarkupSafe==2.1.1
+itsdangerous==2.0.1
+requests==2.22.0
+
+# 系统和工具
+protobuf==3.20.3
+packaging==21.3
+paramiko>=2.12.0
+pathos>=0.2.4
+psutil
+schema>=0.7.2
+
+# 添加缺失的依赖
+bcrypt>=4.0.1
+
+# Horizon工具链（请确保deps/wheels目录中有对应的wheel文件）
 hbdk @ file:deps/wheels/hbdk-3.49.15-cp310-cp310-linux_x86_64.whl
 hbdk-model-verifier @ file:deps/wheels/hbdk_model_verifier-3.49.15-py3-none-linux_x86_64.whl
 horizon-nn @ file:deps/wheels/horizon_nn-1.1.0-cp310-cp310-linux_x86_64.whl
@@ -47,7 +69,5 @@ horizon-plugin-pytorch @ file:deps/wheels/horizon_plugin_pytorch-2.3.6+cu116.tor
 horizon-torch-samples @ file:deps/wheels/horizon_torch_samples-2.3.8-py3-none-any.whl
 horizon_tc_ui @ file:deps/wheels/horizon_tc_ui-1.24.3-cp310-cp310-linux_x86_64.whl
 
-# Web服务
-itsdangerous==2.0.1
-Flask==2.0.3
-Werkzeug==2.0.3
+# 可选依赖（如果需要COCO数据集支持，取消注释）
+# pycocotools==2.0.3
