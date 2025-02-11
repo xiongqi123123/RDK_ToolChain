@@ -42,6 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
        python3-numpy \
        git \
        python3.10-venv \
+       graphviz \
     && rm -rf /var/lib/apt/lists/* \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
     && update-alternatives --set python3 /usr/bin/python3.10 \

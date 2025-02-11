@@ -3,3 +3,5 @@ logs/
 util/host/
 *.pt
 deps/
+__pycache__/
+*.pyc
