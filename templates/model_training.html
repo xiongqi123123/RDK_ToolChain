@@ -11,7 +11,7 @@
                     <option value="">请先选择模型系列</option>
                     <option value="yolo">YOLO (目标检测)</option>
                 </select>
-                <small class="help-text">不同模型系列适用于不同的任务场景</small>
+                <small class="help-text">目前仅支持YOLO系列</small>
             </div>
 
             <div class="form-group">
@@ -74,8 +74,8 @@ dataset_root/
 
             <div class="form-group">
                 <label for="batchSize">Batch 大小</label>
-                <input type="number" id="batchSize" name="batchSize" min="1" value="32" required>
-                <small class="help-text">建议值：GPU训练 32-128，CPU训练 8-32</small>
+                <input type="number" id="batchSize" name="batchSize" min="1" value="8" required>
+                <small class="help-text">建议值：GPU训练 8-32，CPU训练 2-8</small>
             </div>
 
             <div class="form-group">
