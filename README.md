@@ -10,7 +10,7 @@
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;现在这个版本非常的粗糙，本来都有点不敢发出来的，希望大家能够多多提出意见帮助这个项目改进！（qaq：JS真的太难了）
 
-- 项目地址：https://github.com/xiongqi123123/RDK_ToolChain.git（求求Star~仓库中仅有前后端代码没有修改过的模型及权重文件，完整版请从网盘下载）
+- 项目地址：https://github.com/xiongqi123123/RDK_ToolChain.git （求求Star~仓库中仅有前后端代码没有修改过的模型及权重文件，完整版请从网盘下载）
 - 项目网盘：https://pan.baidu.com/s/1fz_DueWNr3uKDLO7KkNwZw?pwd=7jy3
 
 ### **使用方法：**
