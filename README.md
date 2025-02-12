@@ -4,6 +4,7 @@
 > CSDN: [SkyXZ～-CSDN Blog](https://blog.csdn.net/xiongqi123123?spm=1000.2115.3001.5343)  
 > Blog Garden: [SkyXZ - Blog Garden](https://www.cnblogs.com/SkyXZ)
 
+[English](README.md) | [简体中文](README_cn.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Previously, when using the RDK X3, Teacher Wu Nuo (@wunuo) released the [New Generation Quantization Conversion Toolchain Tutorial](https://developer.d-robotics.cc/forumDetail/219287410792732160?key=1). This tool was incredibly convenient and allowed for quick model quantization on the X3. However, the only drawback was that it didn’t support the X5. So, I decided to create a similar toolchain for the X5, inspired by Teacher Wu’s X3 visualization tool. My goal was to make this visualization toolchain adaptable to all models in the Digua ModelZoo, offering a one-stop solution from model training to conversion and deployment. This would make it easier and more convenient for new RDK users.<font color="orange">After some time and effort, I’m proud to announce the first version of my toolchain is now ready!</font> However, it’s a bit rough at the moment, and I was hesitant to release it, so please provide feedback and suggestions to help improve this project! (qaq: JS is really hard!)
 
 - Project URL: https://github.com/xiongqi123123/RDK_ToolChain.git (Please give it a Star~ The repository only contains the frontend and backend code; model and weight files have not been modified. The full version can be downloaded from the cloud drive.)
