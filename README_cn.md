@@ -6,6 +6,7 @@
 >
 > 博客园：[SkyXZ - 博客园](https://www.cnblogs.com/SkyXZ)
 
+[English](README.md) | [简体中文](README_cn.md)  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;之前在使用的RDK X3的时候，吴诺老师@wunuo发布了[新一代量化转换工具链使用教程](https://developer.d-robotics.cc/forumDetail/219287410792732160?key=1)，这个工具真的非常的方便，能非常快速的完成X3上模型的量化，唯一的缺点便是不支持X5，于是我便想着仿照老师的X3可视化工具链来弄一个适配X5的可视化量化转换工具链，我的初步构想便是这个可视化工具链能够逐步适配地瓜ModelZoo里的所有模型实现一站式从模型的训练到模型的转换最后到部署，使之能够更加轻松便捷的服务新拿到RDK的同学们，<font color="orange">于是在经过一段时间的努力后，我的工具链初版完成啦！</font>，可遗憾的是目前模型训练和模型导出部分仅支持YOLO的系列，其他的模型诸如ResNet、FCOS则暂时不支持从训练到转换，但是由于模型的量化和转化部分的自由度非常的高，现在应该是能覆盖绝大多数模型的转换了
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;现在这个版本非常的粗糙，本来都有点不敢发出来的，希望大家能够多多提出意见帮助这个项目改进！（qaq：JS真的太难了）
