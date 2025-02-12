@@ -1,105 +1,108 @@
-# (伪)RDK可视化模型转换工具
+# RDK Next-Generation Model Conversion Visualization Tool! 
 
-> 作者：SkyXZ
->
-> CSDN：[SkyXZ～-CSDN博客](https://blog.csdn.net/xiongqi123123?spm=1000.2115.3001.5343)
->
-> 博客园：[SkyXZ - 博客园](https://www.cnblogs.com/SkyXZ)
+> Author: SkyXZ  
+> CSDN: [SkyXZ～-CSDN Blog](https://blog.csdn.net/xiongqi123123?spm=1000.2115.3001.5343)  
+> Blog Garden: [SkyXZ - Blog Garden](https://www.cnblogs.com/SkyXZ)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;之前在使用的RDK X3的时候，吴诺老师@wunuo发布了[新一代量化转换工具链使用教程](https://developer.d-robotics.cc/forumDetail/219287410792732160?key=1)，这个工具真的非常的方便，能非常快速的完成X3上模型的量化，唯一的缺点便是不支持X5，于是我便想着仿照老师的X3可视化工具链来弄一个适配X5的可视化量化转换工具链，我的初步构想便是这个可视化工具链能够逐步适配地瓜ModelZoo里的所有模型实现一站式从模型的训练到模型的转换最后到部署，使之能够更加轻松便捷的服务新拿到RDK的同学们，<font color="orange">于是在经过一段时间的努力后，我的工具链初版完成啦！</font>，可遗憾的是目前模型训练和模型导出部分仅支持YOLO的系列，其他的模型诸如ResNet、FCOS则暂时不支持从训练到转换，但是由于模型的量化和转化部分的自由度非常的高，现在应该是能覆盖绝大多数模型的转换了
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Previously, when using the RDK X3, Teacher Wu Nuo (@wunuo) released the [New Generation Quantization Conversion Toolchain Tutorial](https://developer.d-robotics.cc/forumDetail/219287410792732160?key=1). This tool was incredibly convenient and allowed for quick model quantization on the X3. However, the only drawback was that it didn’t support the X5. So, I decided to create a similar toolchain for the X5, inspired by Teacher Wu’s X3 visualization tool. My goal was to make this visualization toolchain adaptable to all models in the Digua ModelZoo, offering a one-stop solution from model training to conversion and deployment. This would make it easier and more convenient for new RDK users.<font color="orange">After some time and effort, I’m proud to announce the first version of my toolchain is now ready!</font> However, it’s a bit rough at the moment, and I was hesitant to release it, so please provide feedback and suggestions to help improve this project! (qaq: JS is really hard!)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;现在这个版本非常的粗糙，本来都有点不敢发出来的，希望大家能够多多提出意见帮助这个项目改进！（qaq：JS真的太难了）
+- Project URL: https://github.com/xiongqi123123/RDK_ToolChain.git (Please give it a Star~ The repository only contains the frontend and backend code; model and weight files have not been modified. The full version can be downloaded from the cloud drive.)
+- Cloud Drive: https://pan.baidu.com/s/1fz_DueWNr3uKDLO7KkNwZw?pwd=7jy3
 
-- 项目地址：https://github.com/xiongqi123123/RDK_ToolChain.git （求求Star~仓库中仅有前后端代码没有修改过的模型及权重文件，完整版请从网盘下载）
-- 项目网盘：https://pan.baidu.com/s/1fz_DueWNr3uKDLO7KkNwZw?pwd=7jy3
+## Usage Instructions:
 
-### **使用方法：**
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color="red">Default launch address: 127.0.0.1:5000</font>
 
-1. **Docker使用（推荐）：**
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For Docker installation instructions, refer to: [Linux Docker and Nvidia Container Toolkit Installation Guide - SkyXZ - Blog Garden](https://www.cnblogs.com/SkyXZ/p/18710410)
+
+1. **Using Docker (Recommended)**
 
 ```bash
-# step 1 拉取docker镜像（阿里云仓库）
+# Step 1: Pull the Docker image (Aliyun repository)
 docker pull crpi-0uog49363mcubexr.cn-hangzhou.personal.cr.aliyuncs.com/skyxz/rdk_toolchain:v1.3
-# step 2 创建文件夹映射
+# Step 2: Create a folder mapping
 mkdir ~/dataset
 export dataset_path=~/dataset
-# Run-Method-1 临时创建容器（自行修改--shm-size配置）
-docker run -it --rm --gpus all --shm-size=32g --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data rdk_toolchain:v1.3
-# Run-Method-2 永久创建容器（自行修改--shm-size配置）
-docker run -it --rm --gpus all --shm-size={你的内存大小例如：32g} --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data rdk_toolchain:v1.3
+# Run-Method-1: Create a temporary container (modify --shm-size configuration as needed)
+docker run -it --rm --gpus all --shm-size=32g --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data crpi-0uog49363mcubexr.cn-hangzhou.personal.cr.aliyuncs.com/skyxz/rdk_toolchain:v1.3
+# Run-Method-2: Create a permanent container (modify --shm-size configuration as needed)
+docker run -it --rm --gpus all --shm-size={your memory size, e.g., 32g} --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data crpi-0uog49363mcubexr.cn-hangzhou.personal.cr.aliyuncs.com/skyxz/rdk_toolchain:v1.3
 ```
 
-2. **手动构建docker镜像：**
+2. **Build Docker Image Manually:**
 
 ```bash
-# step 1 ：从百度云下载源码（仓库中仅有前端后端实现）
+# Step 1: Download the source code from Baidu Cloud (only front-end and back-end implementations in the repository)
 https://pan.baidu.com/s/1fz_DueWNr3uKDLO7KkNwZw?pwd=7jy3
-# step 2 解压并进入项目目录
-# step 3 构建docker
+# Step 2: Extract and navigate to the project directory
+# Step 3: Build the Docker image
 docker build -t rdk_toolchain .
-# step 4 创建文件夹映射
+# Step 4: Create a folder mapping
 mkdir ~/dataset
 export dataset_path=~/dataset
-# Run-Method-1 临时创建容器（自行修改--shm-size配置）
-docker run -it --rm --gpus all --shm-size=32g --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data rdk_toolchain:v1.3
-# Run-Method-2 永久创建容器（自行修改--shm-size配置）
-docker run -it --rm --gpus all --shm-size={你的内存大小例如：32g} --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data rdk_toolchain:v1.3
+# Run-Method-1: Create a temporary container (modify --shm-size configuration as needed)
+docker run -it --rm --gpus all --shm-size=32g --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data crpi-0uog49363mcubexr.cn-hangzhou.personal.cr.aliyuncs.com/skyxz/rdk_toolchain:v1.3
+# Run-Method-2: Create a permanent container (modify --shm-size configuration as needed)
+docker run -it --rm --gpus all --shm-size={your memory size, e.g., 32g} --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data crpi-0uog49363mcubexr.cn-hangzhou.personal.cr.aliyuncs.com/skyxz/rdk_toolchain:v1.3
 ```
 
-3. **直接下载源码使用：**
+3. **Directly Download the Source Code:**
 
 ```bash
-# step 1 ：从百度云下载源码（仓库中仅有前端后端实现）
+# Step 1: Download the source code from Baidu Cloud (only front-end and back-end implementations in the repository)
 https://pan.baidu.com/s/1fz_DueWNr3uKDLO7KkNwZw?pwd=7jy3
-# step 2 : 安装依赖
+
+# Step 2: Install dependencies
 pip3 install -r requirements_docker.txt
-# step 3 ：运行脚本即可
+
+# Step 3: Run the script
 bash start_services.sh
 ```
 
-### **注意事项：**
+## Important Notes:
 
-1. 当前页面的任务正在进行的时候请不要切换至其他页面！切至其他页面后再切回本页面无法恢复原先内容！也无法结束进行中的进程了！
-2. 当停止某项操作时（如停止训练）有时停止按钮可能会卡住无反应，这不是卡死了！这是后台正在尝试杀死进程中，几秒后再次点击停止即可退出！
-3. 当遇到无法结束进程或是在任务进行中切换至其他页面时请停止Docker以结束后台正在运行中的进程！
-4. 部分日志输出为红色不一定是报错！进程是否因为报错结束请以训练状态标志为准！
-5. <font color="red">除了模型导出的onnx会放在原pt模型路径下之外，其他所有运行的结果将保存在/app/logs下</font>
+1. Do not switch to other pages while tasks are running on the current page! Switching away and returning will not restore the original content, and you will not be able to terminate ongoing processes.
+2. When stopping a task (e.g., training), the stop button may sometimes be unresponsive. This does not mean the system is frozen! It’s attempting to terminate the process, and you can click "Stop" again after a few seconds to exit.
+3. If you encounter issues terminating a process or switching pages during task execution, please stop the Docker container to end the background processes.
+4. Red-colored logs do not necessarily indicate errors! Check the training status indicators to determine whether the process ended due to an error.
+5. <font color="red">Except for the exported ONNX model, which will be saved in the original pt model path, all other results will be stored in /app/logs.</font>
 
-### **版本介绍：**
+## Version Information:
 
-#### V1.0:
+### V1.0:
 
-1. 已支持所有模型的量化转换操作
-2. 已完成ModelZoo中YOLO全系列的训练与导出实现
-3. 即将支持ResNet系列模型、FCOS等模型（TODO V2.0）
-4. 即将实现PC端转换后模型推理检查（TODO V2.0）
+1. Supports quantization and conversion for most models
+2. YOLO model series fully supported for training and export
+3. Support for ResNet series models, FCOS, etc., coming soon (TODO for V2.0)
+4. PC-side inference check for converted models coming soon (TODO for V2.0)
 
-### **地瓜机器人RDK模型一站式开发工具功能展示：**
+## Features of Digua RDK One-Stop Model Development Tool:
 
-- 工具总览：
+- Tool Overview:
 
-![index](static/img/index.gif)
+![index](https://img2023.cnblogs.com/blog/3505969/202502/3505969-20250211041612388-1237210810.gif)
 
-- 模型训练：
+- Model Train:
 
-![train](static/img/train.gif)
+![train](https://img2023.cnblogs.com/blog/3505969/202502/3505969-20250211102126870-668114243.gif)
 
-- 模型导出
+- Model Export:
 
-![export](static/img/export.gif )
+![export](https://img2023.cnblogs.com/blog/3505969/202502/3505969-20250211101319375-1721871882.gif)
 
-- 模型量化检查
+- Model Quantization Check:
 
-![quar](static/img/quar.gif)
+![quar](https://img2023.cnblogs.com/blog/3505969/202502/3505969-20250211101333453-1711485780.gif)
 
-- 模型转换
+- Model Conversion:
 
-![conven](static/img/conven.gif)
+![conven](https://img2023.cnblogs.com/blog/3505969/202502/3505969-20250211101354986-853288097.gif)
 
-- 反量化节点摘除
+- Dequantization Node Removal:
 
-![delete](static/img/delete.gif)
+![delete](https://img2023.cnblogs.com/blog/3505969/202502/3505969-20250211101445603-555712188.gif)
 
-- 模型输入输出情况及可视化检查
+- Model Input/Output Visualization Check:
 
-![detection](static/img/detection.gif)
+![detection](https://img2023.cnblogs.com/blog/3505969/202502/3505969-20250211043209164-1280903742.gif)
+

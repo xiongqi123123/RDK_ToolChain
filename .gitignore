@@ -5,3 +5,4 @@ util/host/
 deps/
 __pycache__/
 *.pyc
+Version/
