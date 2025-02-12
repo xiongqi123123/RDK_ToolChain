@@ -25,9 +25,9 @@ docker pull crpi-0uog49363mcubexr.cn-hangzhou.personal.cr.aliyuncs.com/skyxz/rdk
 mkdir ~/dataset
 export dataset_path=~/dataset
 # Run-Method-1 临时创建容器（自行修改--shm-size配置）
-docker run -it --rm --gpus all --shm-size=32g --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data rdk_toolchain:v1.3
+docker run -it --rm --gpus all --shm-size={你的内存大小例如：32g} --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data crpi-0uog49363mcubexr.cn-hangzhou.personal.cr.aliyuncs.com/skyxz/rdk_toolchain:v1.3
 # Run-Method-2 永久创建容器（自行修改--shm-size配置）
-docker run -it --rm --gpus all --shm-size={你的内存大小例如：32g} --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data rdk_toolchain:v1.3
+docker run -it --gpus all --shm-size={你的内存大小例如：32g} --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data crpi-0uog49363mcubexr.cn-hangzhou.personal.cr.aliyuncs.com/skyxz/rdk_toolchain:v1.3  
 ```
 
 2. **手动构建docker镜像：**
@@ -42,9 +42,9 @@ docker build -t rdk_toolchain .
 mkdir ~/dataset
 export dataset_path=~/dataset
 # Run-Method-1 临时创建容器（自行修改--shm-size配置）
-docker run -it --rm --gpus all --shm-size=32g --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data rdk_toolchain:v1.3
+docker run -it --rm --gpus all --shm-size=32g --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data crpi-0uog49363mcubexr.cn-hangzhou.personal.cr.aliyuncs.com/skyxz/rdk_toolchain:v1.3  
 # Run-Method-2 永久创建容器（自行修改--shm-size配置）
-docker run -it --rm --gpus all --shm-size={你的内存大小例如：32g} --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data rdk_toolchain:v1.3
+docker run -it --rm --gpus all --shm-size={你的内存大小例如：32g} --ipc=host -e PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 -e CUDA_LAUNCH_BLOCKING=1 -p 5000:5000 -p 8080:8080 -v "$dataset_path":/data crpi-0uog49363mcubexr.cn-hangzhou.personal.cr.aliyuncs.com/skyxz/rdk_toolchain:v1.3  
 ```
 
 3. **直接下载源码使用：**
