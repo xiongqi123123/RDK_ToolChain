@@ -1,3 +1,126 @@
+// 模型配置数据
+const modelConfigs = {
+    yolo: {
+        versions: [
+            { 
+                value: "yolov5", 
+                label: "YOLOv5",
+                tags: [
+                    { 
+                        value: "v2.0", 
+                        label: "Yolov5-V2.0",
+                    },
+                    { 
+                        value: "v7.0", 
+                        label: "Yolov5-V7.0",
+                    }
+                ]
+            },
+            { 
+                value: "yolov8", 
+                label: "YOLOv8",
+                tags: [
+                    {
+                        value: "detect",
+                        label: "YOLOv8-Detect",
+                    },
+                    {
+                        value: "pose",
+                        label: "YOLOv8-Pose",
+                    },
+                    {
+                        value: "seg",
+                        label: "YOLOv8-Seg",
+                    }
+                ]
+            },
+            { 
+                value: "yolov10", 
+                label: "YOLOv10",
+                tags: [
+                    {
+                        value: "detect",
+                        label: "YOLOv10-Detect",
+                    }
+                ]
+            },
+            { 
+                value: "yolo11", 
+                label: "YOLO11",
+                tags: [
+                    {
+                        value: "detect",
+                        label: "YOLO11-Detect",
+                    },
+                    {
+                        value: "pose",
+                        label: "YOLO11-Pose",
+                    }
+                ]
+            }
+        ]
+    }
+};
+
+// 更新版本选项
+function updateVersionOptions(modelSeries) {
+    console.log('更新版本选项，模型系列:', modelSeries);
+    const versionSelect = document.getElementById('modelVersion');
+    if (!versionSelect) {
+        console.error('未找到模型版本选择框');
+        return;
+    }
+    
+    const versions = modelConfigs[modelSeries]?.versions || [];
+    console.log('找到版本选项:', versions);
+    
+    versionSelect.innerHTML = '<option value="">请选择版本</option>';
+    versions.forEach(version => {
+        const option = document.createElement('option');
+        option.value = version.value;
+        option.textContent = version.label;
+        versionSelect.appendChild(option);
+    });
+    console.log('版本选项已更新');
+}
+
+// 更新Tag选项
+function updateTagOptions(modelSeries, selectedVersion) {
+    console.log('更新Tag选项，模型系列:', modelSeries, '选择的版本:', selectedVersion);
+    const tagSelect = document.getElementById('modelTag');
+    if (!tagSelect) {
+        console.error('未找到模型Tag选择框');
+        return;
+    }
+    
+    tagSelect.innerHTML = '<option value="">请先选择模型版本</option>';
+    
+    // 根据选中的version找到对应的配置
+    const versionConfig = modelConfigs[modelSeries]?.versions.find(v => v.value === selectedVersion);
+    console.log('找到版本配置:', versionConfig);
+    
+    const tags = versionConfig?.tags || [];
+    console.log('找到Tag选项:', tags);
+    
+    tagSelect.innerHTML = '<option value="">请选择模型Tag</option>';
+    tags.forEach(tag => {
+        const option = document.createElement('option');
+        option.value = tag.value;
+        option.textContent = tag.label;
+        tagSelect.appendChild(option);
+    });
+    console.log('Tag选项已更新');
+    
+    tagSelect.onchange = function() {
+        const kptShapeGroup = document.getElementById('kptShapeGroup');
+        if (kptShapeGroup && this.value === 'pose') {
+            kptShapeGroup.style.display = 'block';
+        } else if (kptShapeGroup) {
+            kptShapeGroup.style.display = 'none';
+        }
+    };
+}
+
 // 全局变量
 let currentBrowserTarget = null;
 let currentPath = '/';
@@ -5,10 +128,50 @@ let socket = null;
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('页面加载完成，初始化测试页面');
+    console.log('模型配置数据:', modelConfigs);
+    
+    // 初始化各个组件
+    initializeModelSelectors();
     initializeWebSocket();
     initializeFileBrowser();
     initializeForm();
 });
+
+// 初始化模型选择器
+function initializeModelSelectors() {
+    console.log('初始化模型选择器');
+    
+    // 模型系列选择事件
+    const modelSeriesSelect = document.getElementById('modelSeries');
+    if (modelSeriesSelect) {
+        console.log('找到模型系列选择框');
+        modelSeriesSelect.addEventListener('change', function() {
+            const selectedSeries = this.value;
+            console.log('选择的模型系列:', selectedSeries);
+            updateVersionOptions(selectedSeries);
+            
+            // 重置version和tag选择
+            document.getElementById('modelVersion').value = '';
+            document.getElementById('modelTag').value = '';
+        });
+    } else {
+        console.error('未找到模型系列选择框');
+    }
+
+    // 版本选择事件
+    const modelVersionSelect = document.getElementById('modelVersion');
+    if (modelVersionSelect) {
+        console.log('找到模型版本选择框');
+        modelVersionSelect.addEventListener('change', function() {
+            const modelSeries = document.getElementById('modelSeries').value;
+            console.log('选择的模型版本:', this.value);
+            updateTagOptions(modelSeries, this.value);
+        });
+    } else {
+        console.error('未找到模型版本选择框');
+    }
+}
 
 function initializeWebSocket() {
     socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
@@ -30,7 +193,9 @@ function initializeFileBrowser() {
     const modal = document.getElementById('fileBrowserModal');
     const closeBtn = modal.querySelector('.close');
     
-    closeBtn.onclick = closeFileBrowser;
+    if (closeBtn) {
+        closeBtn.onclick = closeFileBrowser;
+    }
     
     window.onclick = function(event) {
         if (event.target == modal) {
@@ -125,8 +290,8 @@ function handleFileClick(item) {
         loadFileList(currentPath);
     } else {
         // 检查文件类型
-        if (currentBrowserTarget === 'model' && !item.name.endsWith('.bin')) {
-            showError('请选择.bin格式的模型文件');
+        if (currentBrowserTarget === 'model' && !item.name.endsWith('.onnx')) {
+            showError('请选择.onnx格式的模型文件');
             return;
         }
         if (currentBrowserTarget === 'image' && !item.name.match(/\.(jpg|jpeg|png)$/i)) {
@@ -145,9 +310,12 @@ function handleFileClick(item) {
 function startTesting() {
     const modelPath = document.getElementById('modelPath').value;
     const imagePath = document.getElementById('imagePath').value;
+    const modelSeries = document.getElementById('modelSeries').value;
+    const modelVersion = document.getElementById('modelVersion').value;
+    const modelTag = document.getElementById('modelTag').value;
     
-    if (!modelPath || !imagePath) {
-        showError('请选择模型文件和测试图片');
+    if (!modelPath || !imagePath || !modelSeries || !modelVersion || !modelTag) {
+        showError('请完成所有必填项');
         return;
     }
     
@@ -164,7 +332,10 @@ function startTesting() {
         },
         body: JSON.stringify({
             model_path: modelPath,
-            image_path: imagePath
+            image_path: imagePath,
+            model_series: modelSeries,
+            model_version: modelVersion,
+            model_tag: modelTag
         })
     })
     .then(response => response.json())
