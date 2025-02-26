@@ -11,7 +11,7 @@
                     <input type="text" id="modelPath" name="modelPath" required readonly>
                     <button type="button" class="browse-btn" onclick="openModelBrowser()">浏览</button>
                 </div>
-                <small class="help-text">请选择需要测试的模型文件(.bin格式)</small>
+                <small class="help-text">请选择需要测试的模型文件(.onnx格式)</small>
             </div>
 
             <div class="form-group">
@@ -22,6 +22,21 @@
                 </div>
                 <small class="help-text">请选择需要测试的图片文件(支持jpg、png格式)</small>
             </div>
+
+
+
+            
+            <div class="form-group">
+                <label for="modelSeries">模型系列</label>
+                <select id="modelSeries" name="modelSeries" required>
+                    <option value="">请先选择模型系列</option>
+                    <option value="yolo">YOLO (目标检测)</option>
+                </select>
+                <small class="help-text">目前仅支持YOLO系列</small>
+            </div>
+
+
+
 
             <div class="form-actions">
                 <button type="submit" class="submit-btn">开始测试</button>
@@ -40,9 +55,18 @@
         </div>
         <div id="testResult" style="display: none;">
             <h3>测试结果</h3>
-            <div id="resultImage" style="margin-top: 10px;">
-                <img id="originalImage" src="" alt="原始图片" style="max-width: 45%; margin-right: 5%;">
-                <img id="processedImage" src="" alt="处理后图片" style="max-width: 45%;">
+            <div id="resultContainer" style="display: none; margin-top: 20px;">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>原始图片</h4>
+                        <img id="originalImage" class="img-fluid" alt="原始图片">
+                    </div>
+                    <div class="col-md-6">
+                        <h4>检测结果</h4>
+                        <img id="resultImage" class="img-fluid" alt="检测结果">
+                    </div>
+                </div>
+                <div id="resultInfo" class="mt-3"></div>
             </div>
             <div id="detectionInfo" class="log-output" style="margin-top: 20px;">
             </div>
