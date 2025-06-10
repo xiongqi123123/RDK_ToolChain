@@ -1,124 +1,287 @@
+// 检查 common.js 中的工具类是否加载
+if (typeof PageStateManager === 'undefined') {
+    console.error('PageStateManager 未定义，请检查 common.js 是否正确加载');
+}
+if (typeof PageRestorer === 'undefined') {
+    console.error('PageRestorer 未定义，请检查 common.js 是否正确加载');
+}
+if (typeof DOMUtils === 'undefined') {
+    console.error('DOMUtils 未定义，请检查 common.js 是否正确加载');
+}
+
+// 初始化状态管理器
+const detectionStateManager = new PageStateManager('detection', 800);
+const detectionRestorer = new PageRestorer(
+    detectionStateManager,
+    '/api/detection-status',
+    '/api/stop-detection'
+);
+
 // 文件浏览器状态
 let currentBrowserMode = 'model';
 
+// 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-    // 表单提交处理
-    const detectionForm = document.getElementById('detectionForm');
-    detectionForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // 显示加载状态
-        const submitBtn = detectionForm.querySelector('.submit-btn');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = '检测中...';
-        submitBtn.disabled = true;
-
-        try {
-            const formData = new FormData(detectionForm);
-            
-            // 打印表单数据
-            console.log('提交的表单数据:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`${key}: ${value}`);
-            }
-            
-            const response = await fetch('/model-detection', {
-                method: 'POST',
-                body: formData
-            });
-            
-            console.log('服务器响应状态:', response.status);
-            const result = await response.json();
-            console.log('服务器返回数据:', result);
-            
-            if (!response.ok) {
-                throw new Error(`服务器返回错误: ${result.message || '未知错误'}`);
-            }
-            
-            // 更新检测状态区域
-            updateDetectionStatus(result);
-            
-        } catch (error) {
-            console.error('提交失败:', error);
-            alert(`提交失败: ${error.message}`);
-        } finally {
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
-        }
-    });
+    console.log('检测页面开始初始化...');
+    initializeDetectionPage();
 });
 
-// 检测状态管理
-let detectionStatus = {
-    isDetecting: false
-};
+// 初始化检测页面
+function initializeDetectionPage() {
+    // 恢复本地状态
+    const stateLoaded = detectionStateManager.load();
+    console.log('本地状态加载结果:', stateLoaded);
+    
+    // 绑定表单事件
+    bindDetectionFormEvents();
+    
+    // 检查并恢复状态
+    checkAndRestoreDetectionState();
+    
+    console.log('检测页面初始化完成');
+}
 
-// 更新检测状态显示
-function updateDetectionStatus(data) {
+// 绑定表单事件
+function bindDetectionFormEvents() {
+    const detectionForm = document.getElementById('detectionForm');
+    
+    if (detectionForm) {
+        detectionForm.addEventListener('submit', handleDetectionFormSubmit);
+        detectionForm.addEventListener('reset', () => {
+            detectionStateManager.clear();
+            location.reload();
+        });
+    }
+}
+
+// 检查并恢复检测状态
+async function checkAndRestoreDetectionState() {
+    const result = await detectionRestorer.checkAndRestore();
+    
+    if (result.shouldRestore) {
+        if (result.serverStatus) {
+            // 根据服务器状态恢复UI
+            restoreDetectionUI(result.serverStatus);
+            // 开始轮询
+            setTimeout(pollDetectionStatus, 1000);
+        } else if (result.networkError) {
+            // 网络错误，根据本地状态恢复
+            restoreDetectionUIFromLocal();
+            setTimeout(pollDetectionStatus, 5000);
+        }
+    }
+    
+    // 恢复表单状态
+    restoreFormState();
+}
+
+// 根据服务器状态恢复检测UI
+function restoreDetectionUI(serverStatus) {
+    console.log('开始恢复检测UI...');
+    
+    // 禁用表单
+    DOMUtils.toggleForm('#detectionForm', true);
+    
+    // 显示检测状态区域
     const detectionProgress = document.getElementById('detectionProgress');
     const detectionControls = document.querySelector('.detection-controls');
-    const perfImage = document.getElementById('perfImage');
     
-    if (data.status === 'success') {
-        detectionStatus.isDetecting = true;
-
-        detectionProgress.innerHTML = `
-            <div class="status-item">
-                <h3>
-                    <span>检测状态</span>
-                    <span class="status-badge running">正在检测</span>
-                </h3>
-            </div>
-            <div class="status-item">
-                <h3>检测配置</h3>
-                <pre>${JSON.stringify(data.config, null, 2)}</pre>
-            </div>
-            <div class="status-item">
-                <h3>运行日志</h3>
-                <pre class="log-output"></pre>
-            </div>
-        `;
-        
-        // 显示停止按钮
-        detectionControls.style.display = 'flex';
-        
-        // 隐藏性能分析图
-        perfImage.style.display = 'none';
-        
-        // 开始轮询检测状态
-        pollDetectionStatus();
-    } else {
-        // 显示错误信息
-        detectionProgress.innerHTML = `
-            <div class="status-item">
-                <h3>
-                    <span>错误</span>
-                    <span class="status-badge stopped">失败</span>
-                </h3>
-                <p class="error-message">${data.message}</p>
-                ${data.error ? `<pre class="error-details">${data.error}</pre>` : ''}
-            </div>
-        `;
-        detectionControls.style.display = 'none';
-        perfImage.style.display = 'none';
+    const statusHtml = `
+        <div class="status-item">
+            <h3>检测状态: <span class="status-badge running">正在检测</span></h3>
+        </div>
+        <div class="status-item">
+            <h3>检测配置:</h3>
+            <pre>${JSON.stringify(serverStatus.config || {}, null, 2)}</pre>
+        </div>
+        <div class="status-item">
+            <h3>运行日志:</h3>
+            <div class="log-output" id="log-output"></div>
+        </div>
+    `;
+    
+    DOMUtils.updateElement('#detectionProgress', statusHtml, true);
+    DOMUtils.toggleDisplay('.detection-controls', true);
+    
+    // 隐藏性能分析图
+    DOMUtils.toggleDisplay('#perfImage', false);
+    
+    // 恢复日志内容
+    const logs = detectionStateManager.getState().logs;
+    if (logs && logs.length > 0) {
+        console.log('恢复检测日志，共' + logs.length + '条');
+        DOMUtils.restoreLogsToContainer('#log-output', logs);
     }
+    
+    // 如果任务已完成且有性能图，则显示性能图
+    const savedState = detectionStateManager.getState();
+    if (serverStatus.status === 'completed' && savedState.perfImage) {
+        showPerfImage(savedState.perfImage);
+    }
+    
+    console.log('检测UI恢复完成');
+}
+
+// 根据本地状态恢复UI（网络错误时使用）
+function restoreDetectionUIFromLocal() {
+    if (!detectionStateManager.isRunning()) return;
+    
+    console.log('根据本地状态恢复检测UI...');
+    
+    const statusHtml = `
+        <div class="status-item">
+            <h3>检测状态: <span class="status-badge running">尝试重连中...</span></h3>
+        </div>
+        <div class="status-item">
+            <h3>运行日志:</h3>
+            <div class="log-output" id="log-output"></div>
+        </div>
+    `;
+    
+    DOMUtils.updateElement('#detectionProgress', statusHtml, true);
+    DOMUtils.toggleDisplay('.detection-controls', true);
+    DOMUtils.toggleDisplay('#perfImage', false);
+    
+    // 恢复日志
+    const logs = detectionStateManager.getState().logs;
+    if (logs && logs.length > 0) {
+        DOMUtils.restoreLogsToContainer('#log-output', logs);
+    }
+}
+
+// 恢复表单状态
+function restoreFormState() {
+    const savedConfig = detectionStateManager.getState().config;
+    if (savedConfig) {
+        console.log('恢复表单状态:', savedConfig);
+        
+        // 恢复模型路径
+        if (savedConfig.modelPath) {
+            const modelPathInput = document.getElementById('modelPath');
+            if (modelPathInput) {
+                modelPathInput.value = savedConfig.modelPath;
+            }
+        }
+    }
+}
+
+// 处理检测表单提交
+function handleDetectionFormSubmit(event) {
+    event.preventDefault();
+    
+    if (detectionStateManager.isRunning()) {
+        alert('已有检测任务在运行中');
+        return;
+    }
+    
+    const formData = new FormData(event.target);
+    const config = Object.fromEntries(formData.entries());
+    
+    // 保存配置到状态
+    detectionStateManager.update({
+        config: config,
+        logs: [] // 清空之前的日志
+    });
+    
+    submitDetectionForm(formData);
+}
+
+// 提交检测表单
+function submitDetectionForm(formData) {
+    console.log('提交检测表单...');
+    
+    // 显示加载状态
+    const submitBtn = document.querySelector('#detectionForm .submit-btn');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = '检测中...';
+    submitBtn.disabled = true;
+
+    fetch('/model-detection', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        console.log('服务器响应状态:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('服务器返回数据:', data);
+        
+        if (data.status === 'success') {
+            console.log('模型检测启动成功');
+            
+            // 更新状态
+            detectionStateManager.update({
+                isRunning: true,
+                status: 'running'
+            });
+            
+            // 更新UI
+            showDetectionStarted(data);
+            
+            // 开始轮询状态
+            setTimeout(pollDetectionStatus, 2000);
+        } else {
+            alert('启动检测失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('提交检测失败:', error);
+        alert('提交检测失败: ' + error.message);
+    })
+    .finally(() => {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// 显示检测开始状态
+function showDetectionStarted(data) {
+    // 禁用表单
+    DOMUtils.toggleForm('#detectionForm', true);
+
+    const statusHtml = `
+        <div class="status-item">
+            <h3>检测状态: <span class="status-badge running">正在检测</span></h3>
+        </div>
+        <div class="status-item">
+            <h3>检测配置:</h3>
+            <pre>${JSON.stringify(data.config, null, 2)}</pre>
+        </div>
+        <div class="status-item">
+            <h3>运行日志:</h3>
+            <div class="log-output" id="log-output"></div>
+        </div>
+    `;
+    
+    DOMUtils.updateElement('#detectionProgress', statusHtml, true);
+    DOMUtils.toggleDisplay('.detection-controls', true);
+    
+    // 隐藏性能分析图
+    DOMUtils.toggleDisplay('#perfImage', false);
 }
 
 // 轮询检测状态
 function pollDetectionStatus() {
-    if (!detectionStatus.isDetecting) return;
+    if (!detectionStateManager.isRunning()) return;
     
     fetch('/api/detection-status')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('收到检测状态数据:', data);
+            
             if (data.status === 'running') {
                 // 更新状态标签
-                const statusBadge = document.querySelector('.status-badge');
-                statusBadge.className = 'status-badge running';
-                statusBadge.textContent = '正在检测';
+                DOMUtils.updateClass('.status-badge', 'status-badge running');
+                DOMUtils.updateElement('.status-badge', '正在检测');
                 
-                // 更新日志
-                updateLogOutput(data);
+                // 更新日志并保存到状态
+                updateDetectionLogOutput(data);
                 
                 // 继续轮询
                 setTimeout(pollDetectionStatus, 1000);
@@ -130,154 +293,144 @@ function pollDetectionStatus() {
         })
         .catch(error => {
             console.error('获取检测状态失败:', error);
-            setTimeout(pollDetectionStatus, 1000);
+            
+            // 如果是网络错误，更新状态为重连中
+            DOMUtils.updateClass('.status-badge', 'status-badge running');
+            DOMUtils.updateElement('.status-badge', '重连中...');
+            
+            const retryTime = error.message.includes('404') ? 5000 : 1000;
+            setTimeout(pollDetectionStatus, retryTime);
         });
 }
 
-function updateLogOutput(data) {
-    const logOutput = document.querySelector('.log-output');
+// 更新检测日志输出
+function updateDetectionLogOutput(data) {
+    const logOutput = document.getElementById('log-output');
     if (!logOutput) return;
-
-    // 添加新的日志内容
+    
+    let hasNewLogs = false;
+    
     if (data.stdout) {
-        const stdoutDiv = document.createElement('div');
-        stdoutDiv.className = 'stdout';
-        stdoutDiv.textContent = data.stdout;
-        logOutput.appendChild(stdoutDiv);
+        const lines = data.stdout.split('\n');
+        lines.forEach(line => {
+            if (line.trim()) {
+                DOMUtils.addLogToContainer('#log-output', 'stdout', line);
+                detectionStateManager.addLog('stdout', line);
+                hasNewLogs = true;
+            }
+        });
     }
+    
     if (data.stderr) {
-        const stderrDiv = document.createElement('div');
-        stderrDiv.className = 'stderr';
-        stderrDiv.textContent = data.stderr;
-        logOutput.appendChild(stderrDiv);
+        const lines = data.stderr.split('\n');
+        lines.forEach(line => {
+            if (line.trim()) {
+                DOMUtils.addLogToContainer('#log-output', 'stderr', line);
+                detectionStateManager.addLog('stderr', line);
+                hasNewLogs = true;
+            }
+        });
     }
-
+    
     // 自动滚动到底部
-    logOutput.scrollTop = logOutput.scrollHeight;
+    if (hasNewLogs) {
+        logOutput.scrollTop = logOutput.scrollHeight;
+    }
 }
 
 // 更新检测完成状态
 function updateDetectionComplete(data) {
-    // 更新状态显示
-    const progressDiv = document.getElementById('detectionProgress');
-    progressDiv.innerHTML = `
-        <div class="status-item">
-            <h3>检测状态 <span class="status-badge completed">已完成</span></h3>
-        </div>
-    `;
+    // 更新状态管理
+    detectionStateManager.update({
+        isRunning: false,
+        status: 'completed',
+        perfImage: data.perf_image // 保存性能图路径
+    });
+    
+    DOMUtils.toggleDisplay('.detection-controls', false);
+    DOMUtils.updateClass('.status-badge', 'status-badge completed');
+    DOMUtils.updateElement('.status-badge', '已完成');
+    
+    // 重新启用表单
+    DOMUtils.toggleForm('#detectionForm', false);
+    
+    // 显示最终日志
+    updateDetectionLogOutput(data);
     
     // 显示模型可视化图片
     if (data.perf_image) {
-        const visualDiv = document.getElementById('perfImage');
-        if (visualDiv) {
-            visualDiv.style.display = 'block';
-            const imgDisplay = document.getElementById('perfImageDisplay');
-            if (imgDisplay) {
-                imgDisplay.src = `/perf_image/${data.perf_image}`;
-                imgDisplay.style.display = 'block';
-            }
-        }
+        showPerfImage(data.perf_image);
     }
     
-    // 显示输出日志
-    if (data.stdout || data.stderr) {
-        const logOutput = document.createElement('div');
-        logOutput.className = 'log-output';
-        
-        if (data.stdout) {
-            logOutput.innerHTML += `
-                <div class="log-separator">标准输出</div>
-                <pre class="stdout">${data.stdout}</pre>
-            `;
-        }
-        
-        if (data.stderr) {
-            logOutput.innerHTML += `
-                <div class="log-separator">标准错误</div>
-                <pre class="stderr">${data.stderr}</pre>
-            `;
-        }
-        
-        progressDiv.appendChild(logOutput);
-    }
+    console.log('模型检测已完成');
+}
+
+// 显示性能分析图
+function showPerfImage(imagePath) {
+    const perfImageDiv = document.getElementById('perfImage');
+    const perfImageDisplay = document.getElementById('perfImageDisplay');
     
-    // 隐藏停止按钮
-    const controlsDiv = document.querySelector('.detection-controls');
-    if (controlsDiv) {
-        controlsDiv.style.display = 'none';
+    if (perfImageDiv && perfImageDisplay) {
+        perfImageDisplay.src = `/perf_image/${imagePath}`;
+        DOMUtils.toggleDisplay('#perfImage', true);
+        
+        console.log('显示性能分析图:', imagePath);
     }
 }
 
 // 更新检测停止状态
 function updateDetectionStopped(data) {
-    const detectionProgress = document.getElementById('detectionProgress');
-    const detectionControls = document.querySelector('.detection-controls');
-    const perfImage = document.getElementById('perfImage');
+    // 更新状态管理
+    detectionStateManager.update({
+        isRunning: false,
+        status: 'stopped'
+    });
     
-    detectionStatus.isDetecting = false;
-    detectionControls.style.display = 'none';
-    perfImage.style.display = 'none';
+    DOMUtils.toggleDisplay('.detection-controls', false);
+    DOMUtils.updateClass('.status-badge', 'status-badge stopped');
+    DOMUtils.updateElement('.status-badge', '已停止');
     
-    const statusBadge = document.querySelector('.status-badge');
-    statusBadge.className = 'status-badge stopped';
-    statusBadge.textContent = '已停止';
+    // 重新启用表单
+    DOMUtils.toggleForm('#detectionForm', false);
     
-    // 更新最终日志
-    updateLogOutput(data);
+    // 隐藏性能分析图
+    DOMUtils.toggleDisplay('#perfImage', false);
+    
+    console.log('模型检测已停止');
 }
 
 // 停止检测
-function stopDetection() {
-    if (!detectionStatus.isDetecting) return;
+async function stopDetection() {
+    const result = await detectionRestorer.stopTask('确定要停止检测吗？');
     
-    if (!confirm('确定要停止检测吗？')) return;
-    
-    fetch('/api/stop-detection', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                updateDetectionStopped(data);
-            } else {
-                alert('停止检测失败: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('停止检测失败:', error);
-            alert('停止检测失败，请重试\n' + error.message);
-        });
+    if (result.success) {
+        updateDetectionStopped(result.data);
+    } else {
+        alert('停止检测失败: ' + result.error);
+    }
 }
 
-// 文件浏览器相关函数
+// 文件浏览器相关功能
+let currentPath = '/';
+const modal = document.getElementById('fileBrowserModal');
+
 function openFileBrowser() {
-    const modal = document.getElementById('fileBrowserModal');
     modal.style.display = 'block';
-    loadDirectory('/');
+    loadDirectory(currentPath);
 }
 
 function closeFileBrowser() {
-    const modal = document.getElementById('fileBrowserModal');
     modal.style.display = 'none';
 }
 
 async function loadDirectory(path) {
     try {
-        console.log('发送请求参数:', {
-            path: path,
-            include_files: true,
-            file_pattern: '*.bin'
-        });
-        
         const response = await fetch('/api/list-directory', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
+            body: JSON.stringify({ 
                 path: path,
                 include_files: true,
                 file_pattern: '*.bin'
@@ -285,12 +438,10 @@ async function loadDirectory(path) {
         });
         
         const data = await response.json();
-        console.log('服务器返回数据:', data);
-        
         if (response.ok) {
+            currentPath = data.current_path;
             updateFileList(data);
         } else {
-            console.error('服务器返回错误:', data);
             alert(data.error || '加载目录失败');
         }
     } catch (error) {
@@ -306,27 +457,24 @@ function updateFileList(data) {
     currentPathElement.textContent = data.current_path;
     fileList.innerHTML = '';
     
-    // 添加文件夹
-    data.items.filter(item => item.type === 'directory').forEach(item => {
+    // 添加文件项
+    data.items.forEach(item => {
         const div = document.createElement('div');
-        div.className = 'file-item folder';
-        div.innerHTML = `
-            <i class="fas fa-folder"></i>
-            <span>${item.name}</span>
-        `;
-        div.onclick = () => loadDirectory(item.path);
-        fileList.appendChild(div);
-    });
-
-    // 添加文件
-    data.items.filter(item => item.type === 'file').forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'file-item file';
-        div.innerHTML = `
-            <i class="fas fa-file"></i>
-            <span>${item.name}</span>
-        `;
-        div.onclick = () => selectFile(item.path);
+        if (item.type === 'file') {
+            div.className = 'file-item file';
+            div.innerHTML = `
+                <i class="fas fa-file"></i>
+                <span>${item.name}</span>
+            `;
+            div.onclick = () => selectFile(item.path);
+        } else {
+            div.className = 'file-item folder';
+            div.innerHTML = `
+                <i class="fas fa-folder"></i>
+                <span>${item.name}</span>
+            `;
+            div.onclick = () => loadDirectory(item.path);
+        }
         fileList.appendChild(div);
     });
 }
@@ -337,7 +485,6 @@ function selectFile(filePath) {
 }
 
 function navigateUp() {
-    const currentPath = document.getElementById('currentPath').textContent;
     const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
     loadDirectory(parentPath);
 }
