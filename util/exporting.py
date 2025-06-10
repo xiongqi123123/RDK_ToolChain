@@ -70,32 +70,57 @@ class ExportProcess:
 
             try:
                 base_dir = Path(__file__).parent.parent.absolute()
-                if config.model_version == 'yolov5':
-                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}_{config.model_tag}"
-                    export_script = base_path / "export.py"
-                elif config.model_version == 'yolov8':
-                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
-                    export_script = base_path / "export.py"
-                elif config.model_version == 'yolov10':
-                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
-                    export_script = base_path / "export.py"
-                elif config.model_version == 'yolo11':
-                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
-                    export_script = base_path / "export.py"
                 
+                # 根据模型系列选择不同的处理方式
+                if config.model_series == 'classification':
+                    # 分类模型导出
+                    base_path = base_dir / "models" / "model_train" / "Classification"
+                    export_script = base_path / "export_classification.py"
+                    
+                    if not export_script.exists():
+                        raise FileNotFoundError(f"分类模型导出脚本不存在: {export_script}")
+                    
+                    os.chdir(base_path)
+                    
+                    export_cmd = [
+                        "python3",
+                        "export_classification.py",
+                        "--model_path", config.model_path,
+                        "--input_size", str(config.image_size),
+                        "--output_dir", str(base_dir / "logs" / "export_output")
+                    ]
+                    
+                elif config.model_series == 'yolo':
+                    # YOLO模型导出
+                    if config.model_version == 'yolov5':
+                        base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}_{config.model_tag}"
+                        export_script = base_path / "export.py"
+                    elif config.model_version == 'yolov8':
+                        base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
+                        export_script = base_path / "export.py"
+                    elif config.model_version == 'yolov10':
+                        base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
+                        export_script = base_path / "export.py"
+                    elif config.model_version == 'yolo11':
+                        base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
+                        export_script = base_path / "export.py"
+                    else:
+                        raise ValueError(f"不支持的YOLO模型版本: {config.model_version}")
+                    
+                    if not export_script.exists():
+                        raise FileNotFoundError(f"YOLO导出脚本不存在: {export_script}")
 
-                if not export_script.exists():
-                    raise FileNotFoundError(f"导出脚本不存在: {export_script}")
+                    os.chdir(base_path)
 
-                os.chdir(base_path)
-
-                export_cmd = [
-                    "python3",
-                    "export.py",
-                    "--weights", config.model_path,
-                    "--img-size", str(config.image_size),  
-                    "--batch-size", "1"   
-                ]
+                    export_cmd = [
+                        "python3",
+                        "export.py",
+                        "--weights", config.model_path,
+                        "--img-size", str(config.image_size),  
+                        "--batch-size", "1"   
+                    ]
+                else:
+                    raise ValueError(f"不支持的模型系列: {config.model_series}")
                 
                 # if config.export_format == 'onnx':
                 #     # v2.0版本会自动导出为ONNX格式，不需要额外参数
@@ -200,6 +225,7 @@ class ExportProcess:
 
             progress = 0
             if stdout_data:
+                # YOLO模型导出进度
                 if "Loading weights from" in stdout_data:
                     progress = 10
                 elif "PyTorch: starting from" in stdout_data:
@@ -209,6 +235,23 @@ class ExportProcess:
                 elif "ONNX: export success" in stdout_data:
                     progress = 100
                 elif "Export complete" in stdout_data:
+                    progress = 100
+                # 分类模型导出进度
+                elif "开始导出分类模型" in stdout_data:
+                    progress = 10
+                elif "检测到模型" in stdout_data:
+                    progress = 20
+                elif "创建模型" in stdout_data:
+                    progress = 30
+                elif "加载模型权重" in stdout_data:
+                    progress = 40
+                elif "模型权重加载完成" in stdout_data:
+                    progress = 50
+                elif "导出ONNX模型到" in stdout_data:
+                    progress = 70
+                elif "ONNX导出完成" in stdout_data:
+                    progress = 90
+                elif "导出完成!" in stdout_data:
                     progress = 100
             
             result = {

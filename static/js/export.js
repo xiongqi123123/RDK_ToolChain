@@ -1,6 +1,135 @@
 
 // 模型配置数据
 const modelConfigs = {
+    classification: {
+        versions: [
+            { 
+                value: "mobilenetv3", 
+                label: "MobileNetV3",
+                tags: [
+                    { 
+                        value: "classification", 
+                        label: "Classification",
+                        sizes: [
+                            { value: "_large_100", label: "large_100" }
+                        ]
+                    }
+                ]
+            },
+            { 
+                value: "mobilenetv4", 
+                label: "MobileNetV4",
+                tags: [
+                    { 
+                        value: "classification", 
+                        label: "Classification",
+                        sizes: [
+                            { value: "_conv_small_050", label: "conv_small_050" },
+                            { value: "_conv_small", label: "conv_small" },
+                            { value: "_conv_medium", label: "conv_medium" },
+                            { value: "_conv_large", label: "conv_large" }
+                        ]
+                    }
+                ]
+            },
+            { 
+                value: "repvit", 
+                label: "RepViT",
+                tags: [
+                    { 
+                        value: "classification", 
+                        label: "Classification",
+                        sizes: [
+                            { value: "_m0_9", label: "m0_9" },
+                            { value: "_m1_0", label: "m1_0" },
+                            { value: "_m1_1", label: "m1_1" },
+                            { value: "_m1_5", label: "m1_5" },
+                            { value: "_m2_3", label: "m2_3" }
+                        ]
+                    }
+                ]
+            },
+            { 
+                value: "efficientvit", 
+                label: "EfficientViT",
+                tags: [
+                    { 
+                        value: "classification", 
+                        label: "Classification",
+                        sizes: [
+                            { value: "_m0", label: "m0" },
+                            { value: "_m1", label: "m1" },
+                            { value: "_m2", label: "m2" },
+                            { value: "_m3", label: "m3" },
+                            { value: "_m4", label: "m4" },
+                            { value: "_m5", label: "m5" }
+                        ]
+                    }
+                ]
+            },
+            { 
+                value: "efficientformerv2", 
+                label: "EfficientFormerV2",
+                tags: [
+                    { 
+                        value: "classification", 
+                        label: "Classification",
+                        sizes: [
+                            { value: "_s0", label: "s0" },
+                            { value: "_s1", label: "s1" },
+                            { value: "_s2", label: "s2" },
+                            { value: "_l", label: "l" }
+                        ]
+                    }
+                ]
+            },
+            { 
+                value: "hrnet", 
+                label: "HRNet",
+                tags: [
+                    { 
+                        value: "classification", 
+                        label: "Classification",
+                        sizes: [
+                            { value: "_w18", label: "w18" },
+                            { value: "_w32", label: "w32" },
+                            { value: "_w48", label: "w48" }
+                        ]
+                    }
+                ]
+            },
+            { 
+                value: "resnet", 
+                label: "ResNet",
+                tags: [
+                    { 
+                        value: "classification", 
+                        label: "Classification",
+                        sizes: [
+                            { value: "18", label: "18" },
+                            { value: "34", label: "34" },
+                            { value: "50", label: "50" },
+                            { value: "101", label: "101" }
+                        ]
+                    }
+                ]
+            },
+            { 
+                value: "resnext", 
+                label: "ResNeXt",
+                tags: [
+                    { 
+                        value: "classification", 
+                        label: "Classification",
+                        sizes: [
+                            { value: "50_32x4d", label: "50_32x4d" },
+                            { value: "101_32x4d", label: "101_32x4d" }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
     yolo: {
         versions: [
             { 
@@ -728,7 +857,7 @@ async function loadDirectory(path) {
             body: JSON.stringify({ 
                 path: path,
                 include_files: true,
-                file_pattern: '*.pt'
+                file_pattern: '*.pt, *.pth'
             })
         });
         

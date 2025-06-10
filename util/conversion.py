@@ -17,8 +17,11 @@ class ConversionConfig:
     input_type_train: str
     input_layout_train: str
     cal_data_dir: str
-    scale_value: float
-    node_info: Dict[str, Dict[str, str]]  # 修改为字典类型
+    norm_type: str
+    scale_value: str  # 改为字符串类型以支持多值
+    mean_value: str = None  # 改为字符串类型以支持多值
+    remove_node_type: str = None  # 添加remove_node_type字段
+    node_info: Dict[str, Dict[str, str]] = None  # 修改为字典类型
 
     @classmethod
     def from_form_data(cls, form_data: dict) -> 'ConversionConfig':
@@ -38,6 +41,17 @@ class ConversionConfig:
                             'InputType': input_types[i],  
                             'OutputType': output_types[i]  
                         }
+            # 处理mean_value，只有选择data_mean_and_scale时才需要
+            mean_value = None
+            if form_data.get('normType') == 'data_mean_and_scale' and 'meanValue' in form_data:
+                mean_value = form_data['meanValue'].strip()
+            
+            # 处理scale_value，可能是单个值或逗号分隔的多个值
+            scale_value = form_data['scaleValue'].strip()
+            
+            # 处理remove_node_type（可选）
+            remove_node_type = form_data.get('removeNodeType', '').strip() or None
+            
             return cls(
                 model_path=form_data['modelPath'],
                 march_type=form_data['marchType'],
@@ -45,7 +59,10 @@ class ConversionConfig:
                 input_type_train=form_data['inputTypeTrain'],
                 input_layout_train=form_data['inputLayoutTrain'],
                 cal_data_dir=form_data['calDataDir'],
-                scale_value=float(form_data['scaleValue']),
+                norm_type=form_data['normType'],
+                scale_value=scale_value,
+                mean_value=mean_value,
+                remove_node_type=remove_node_type,
                 node_info=node_info
             )
         except (KeyError, ValueError) as e:
@@ -73,11 +90,46 @@ class ConversionConfig:
         if not self.input_layout_train:
             raise ValueError("必须选择数据排布")
             
+        if not self.norm_type:
+            raise ValueError("必须选择标准化类型")
+            
+        if self.norm_type not in ['data_scale', 'data_mean_and_scale']:
+            raise ValueError("标准化类型必须是 'data_scale' 或 'data_mean_and_scale'")
+            
         if not self.cal_data_dir:
             raise ValueError("校准数据集路径不能为空")
             
         if not os.path.exists(self.cal_data_dir):
             raise ValueError(f"校准数据集路径不存在: {self.cal_data_dir}")
+
+    def _generate_input_parameters(self) -> Dict[str, Any]:
+        """生成input_parameters配置"""
+        # 处理scale_value：将逗号分隔转换为空格分隔
+        scale_value_formatted = self._format_value_string(self.scale_value)
+        
+        input_params = {
+            'input_type_rt': self.input_type_rt,
+            'input_type_train': self.input_type_train,
+            'input_layout_train': self.input_layout_train.upper(),
+            'norm_type': self.norm_type,
+            'scale_value': scale_value_formatted
+        }
+        
+        # 如果是data_mean_and_scale类型，添加mean_value
+        if self.norm_type == 'data_mean_and_scale' and self.mean_value:
+            mean_value_formatted = self._format_value_string(self.mean_value)
+            input_params['mean_value'] = mean_value_formatted
+            
+        return input_params
+    
+    def _format_value_string(self, value_str: str) -> str:
+        """将逗号分隔的字符串转换为空格分隔的字符串"""
+        if not value_str:
+            return value_str
+        
+        # 移除多余的空格，按逗号分隔，然后用空格连接
+        values = [v.strip() for v in value_str.split(',')]
+        return ' '.join(values)
 
     def generate_yaml(self) -> str:
         """生成YAML配置文件"""
@@ -85,22 +137,24 @@ class ConversionConfig:
         work_dir = base_dir / "logs" / "convert_output"
         work_dir.mkdir(parents=True, exist_ok=True)
 
+        model_parameters = {
+            'onnx_model': self.model_path,
+            'march': self.march_type,
+            'layer_out_dump': False,
+            'working_dir': str(work_dir),
+            'output_model_file_prefix': 'converted_model',
+            'node_info': self.node_info  # 直接使用字典
+        }
+        
+        # 如果有remove_node_type，添加到配置中
+        if self.remove_node_type:
+            # 处理remove_node_type：将逗号分隔转换为空格分隔（如果需要的话）
+            formatted_remove_node_type = self._format_value_string(self.remove_node_type)
+            model_parameters['remove_node_type'] = formatted_remove_node_type
+        
         config = {
-            'model_parameters': {
-                'onnx_model': self.model_path,
-                'march': self.march_type,
-                'layer_out_dump': False,
-                'working_dir': str(work_dir),
-                'output_model_file_prefix': 'converted_model',
-                'node_info': self.node_info  # 直接使用字典
-            },
-            'input_parameters': {
-                'input_type_rt': self.input_type_rt,
-                'input_type_train': self.input_type_train,
-                'input_layout_train': self.input_layout_train.upper(),
-                'norm_type': 'data_scale',
-                'scale_value': self.scale_value
-            },
+            'model_parameters': model_parameters,
+            'input_parameters': self._generate_input_parameters(),
             'calibration_parameters': {
                 'cal_data_dir': self.cal_data_dir,
                 'cal_data_type': 'float32',

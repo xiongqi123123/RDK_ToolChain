@@ -75,13 +75,18 @@ class TrainingConfig:
         
             
         # 验证关键点配置
-        if self.model_version == 'yolov8' and self.model_tag == 'pose':
+        if self.model_series == 'yolo' and self.model_version == 'yolov8' and self.model_tag == 'pose':
             if not self.kpt_num or not self.kpt_dim:
                 raise ValueError("YOLOv8 pose模型需要配置关键点形状")
             if self.kpt_num <= 0:
                 raise ValueError("关键点数量必须大于0")
             if self.kpt_dim < 2 or self.kpt_dim > 3:
                 raise ValueError("关键点维度必须为2或3")
+        
+        # 验证分类模型配置
+        if self.model_series == 'classification':
+            # 分类模型不需要关键点配置
+            pass
 
 
 class TrainingProcess:
@@ -100,7 +105,18 @@ class TrainingProcess:
             try:
                 base_dir = Path(__file__).parent.parent.absolute()
                 
-                if config.model_version == 'yolov5':
+                if config.model_series == 'classification':
+                    # 分类模型训练逻辑
+                    base_path = base_dir / "models" / "model_train" / "Classification" 
+                    train_script = base_path / "train_classification.py"
+                    
+                    # 构建模型名称
+                    if config.model_version in ['resnet', 'resnext']:
+                        model_name = f"{config.model_version}{config.model_size}"
+                    else:
+                        model_name = f"{config.model_version}{config.model_size}"
+                    
+                elif config.model_version == 'yolov5':
                     base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}_{config.model_tag}"
                     train_script = base_path / "train.py"
                     model_config = base_path / "models" / f"{config.model_version}{config.model_size}.yaml"
@@ -127,32 +143,59 @@ class TrainingProcess:
 
                 if not train_script.exists():
                     raise FileNotFoundError(f"训练脚本不存在: {train_script}")
-                if not model_config.exists():
-                    raise FileNotFoundError(f"模型配置文件不存在: {model_config}")
-                if not Path(yaml_path).exists():
-                    raise FileNotFoundError(f"数据集配置文件不存在: {yaml_path}")
+                
+                # 检查文件存在性（按模型类型分别处理）
+                if config.model_series == 'classification':
+                    # 分类模型不需要额外的配置文件
+                    pass
+                else:
+                    # YOLO模型需要模型配置文件和数据集YAML文件
+                    if not model_config.exists():
+                        raise FileNotFoundError(f"模型配置文件不存在: {model_config}")
+                    if yaml_path and not Path(yaml_path).exists():
+                        raise FileNotFoundError(f"数据集配置文件不存在: {yaml_path}")
                 
                 os.chdir(base_path)
                 
-                rel_model_config = os.path.relpath(model_config, base_path)
-                rel_yaml_path = os.path.relpath(yaml_path, base_path)
-                
                 device = "0" if config.device == 'gpu' else "cpu"
                 
-                save_dir = base_dir / "logs" / "train_output" / f"{config.model_version}_{config.model_tag}_{config.model_size}"
-                save_dir.mkdir(parents=True, exist_ok=True)
-                
-                train_cmd = [
-                    "python3",
-                    "train.py",
-                    "--cfg", rel_model_config,
-                    "--data", rel_yaml_path,
-                    "--epochs", str(config.epochs),
-                    "--batch-size", str(config.batch_size),
-                    "--img", str(config.image_size),
-                    "--device", device,
-                    "--project", str(save_dir), 
-                ]
+                if config.model_series == 'classification':
+                    # 分类模型训练命令
+                    save_dir = base_dir / "logs" / "train_output" / f"classification_{config.model_version}_{config.model_size}"
+                    save_dir.mkdir(parents=True, exist_ok=True)
+                    
+                    train_cmd = [
+                        "python3",
+                        "train_classification.py",
+                        "--model", model_name,
+                        "--data-dir", config.dataset_path,
+                        "--num-classes", str(config.num_classes),
+                        "--epochs", str(config.epochs),
+                        "--batch-size", str(config.batch_size),
+                        "--img-size", str(config.image_size),
+                        "--device", device,
+                        "--output-dir", str(save_dir),
+                        "--amp"  # 混合精度训练
+                    ]
+                else:
+                    # YOLO模型训练命令
+                    rel_model_config = os.path.relpath(model_config, base_path)
+                    rel_yaml_path = os.path.relpath(yaml_path, base_path)
+                    
+                    save_dir = base_dir / "logs" / "train_output" / f"{config.model_version}_{config.model_tag}_{config.model_size}"
+                    save_dir.mkdir(parents=True, exist_ok=True)
+                    
+                    train_cmd = [
+                        "python3",
+                        "train.py",
+                        "--cfg", rel_model_config,
+                        "--data", rel_yaml_path,
+                        "--epochs", str(config.epochs),
+                        "--batch-size", str(config.batch_size),
+                        "--img", str(config.image_size),
+                        "--device", device,
+                        "--project", str(save_dir), 
+                    ]
                 
                 print(f"开始训练: {' '.join(train_cmd)}")
                 

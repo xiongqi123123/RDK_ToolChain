@@ -9,9 +9,10 @@
                 <label for="modelSeries">模型系列</label>
                 <select id="modelSeries" name="modelSeries" required>
                     <option value="">请先选择模型系列</option>
-                    <option value="yolo">YOLO (目标检测)</option>
+                    <option value="classification">Classification (图像分类)</option>
+                    <option value="yolo">YOLO (Detect、Pose、Seg)</option>
                 </select>
-                <small class="help-text">目前仅支持YOLO系列</small>
+                <small class="help-text">支持分类和检测模型训练</small>
             </div>
 
             <div class="form-group">
@@ -55,7 +56,7 @@
                     <button type="button" class="browse-btn" onclick="openFileBrowser()">浏览</button>
                 </div>
                 <small class="help-text">请选择数据集根目录，目录结构应为：
-                    <pre class="directory-structure">
+                    <pre class="directory-structure" id="yolo-structure">
 dataset_root/
 ├── images/
 │   ├── train/  # 训练集图片
@@ -63,6 +64,20 @@ dataset_root/
 └── labels/
     ├── train/  # 训练集标签
     └── val/    # 验证集标签（可选）</pre>
+                    <pre class="directory-structure" id="classification-structure" style="display: none;">
+dataset_root/
+├── train/           # 训练集
+│   ├── class1/      # 类别1文件夹
+│   │   ├── img1.jpg
+│   │   └── img2.jpg
+│   └── class2/      # 类别2文件夹
+│       ├── img3.jpg
+│       └── img4.jpg
+└── val/             # 验证集（可选）
+    ├── class1/
+    │   └── img5.jpg
+    └── class2/
+        └── img6.jpg</pre>
                 </small>
             </div>
 

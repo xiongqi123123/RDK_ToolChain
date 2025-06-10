@@ -56,9 +56,24 @@
             </div>
 
             <div class="form-group">
+                <label for="normType">normType类型</label>
+                <select id="normType" name="normType" required>
+                    <option value="data_scale">data_scale</option>
+                    <option value="data_mean_and_scale">data_mean_and_scale</option>
+                </select>
+                <small class="help-text">选择数据normType类型，Yolo选择data_scale，分类选择data_mean_and_scale</small>
+            </div>
+
+            <div class="form-group">
                 <label for="scaleValue">Scale Value</label>
-                <input type="number" id="scaleValue" name="scaleValue" step="any" value="0.003921568627451" required>
-                <span class="help-text">请输入scale value值，YOLO：0.003921568627451</span>
+                <input type="text" id="scaleValue" name="scaleValue" value="0.003921568627451" required>
+                <span class="help-text">请输入scale value值，YOLO：0.003921568627451 分类：0.01712475, 0.017507, 0.01742919</span>
+            </div>
+
+            <div class="form-group" id="meanValueGroup" style="display: none;">
+                <label for="meanValue">Mean Value</label>
+                <input type="text" id="meanValue" name="meanValue" value="123.675, 116.28, 103.53" >
+                <span class="help-text">请输入mean value值，分类模型：123.675, 116.28, 103.53</span>
             </div>
 
             <div class="form-group">
@@ -89,6 +104,12 @@
                     <i class="fas fa-plus"></i> 添加节点
                 </button>
                 <small class="help-text">配置需要特殊处理的节点信息，如Softmax等</small>
+            </div>
+
+            <div class="form-group">
+                <label for="removeNodeType">Remove Node Type（可选）</label>
+                <input type="text" id="removeNodeType" name="removeNodeType" placeholder="例如：Quantize;Dequantize;">
+                <small class="help-text">指定要移除的节点类型，多个类型用逗号分隔</small>
             </div>
 
             <div class="form-group">

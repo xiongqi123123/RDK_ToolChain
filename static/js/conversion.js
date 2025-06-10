@@ -35,6 +35,12 @@ function initializeConversionPage() {
     // 绑定表单事件
     bindConversionFormEvents();
     
+    // 绑定norm_type选择事件
+    bindNormTypeEvent();
+    
+    // 初始化mean value显示状态
+    updateMeanValueVisibility();
+    
     // 检查并恢复状态
     checkAndRestoreConversionState();
     
@@ -50,6 +56,29 @@ function bindConversionFormEvents() {
         conversionForm.addEventListener('reset', () => {
             conversionStateManager.clear();
             location.reload();
+        });
+    }
+    
+    // 绑定输入框的用户修改追踪
+    const scaleValueInput = document.getElementById('scaleValue');
+    const meanValueInput = document.getElementById('meanValue');
+    const removeNodeTypeInput = document.getElementById('removeNodeType');
+    
+    if (scaleValueInput) {
+        scaleValueInput.addEventListener('input', () => {
+            scaleValueInput.dataset.userModified = 'true';
+        });
+    }
+    
+    if (meanValueInput) {
+        meanValueInput.addEventListener('input', () => {
+            meanValueInput.dataset.userModified = 'true';
+        });
+    }
+    
+    if (removeNodeTypeInput) {
+        removeNodeTypeInput.addEventListener('input', () => {
+            removeNodeTypeInput.dataset.userModified = 'true';
         });
     }
 }
@@ -598,5 +627,46 @@ function removeNodeInfo(button) {
     const nodeItem = button.closest('.node-info-item');
     if (nodeItem) {
         nodeItem.remove();
+    }
+}
+
+// 绑定norm_type选择事件
+function bindNormTypeEvent() {
+    const normTypeSelect = document.getElementById('normType');
+    if (normTypeSelect) {
+        normTypeSelect.addEventListener('change', updateMeanValueVisibility);
+    }
+}
+
+// 更新Mean Value输入框的显示状态和默认值
+function updateMeanValueVisibility() {
+    const normTypeSelect = document.getElementById('normType');
+    const meanValueGroup = document.getElementById('meanValueGroup');
+    const meanValueInput = document.getElementById('meanValue');
+    const scaleValueInput = document.getElementById('scaleValue');
+    
+    if (normTypeSelect && meanValueGroup) {
+        if (normTypeSelect.value === 'data_mean_and_scale') {
+            // 分类模型配置
+            meanValueGroup.style.display = 'block';
+            meanValueInput.required = true;
+            
+            // 设置分类模型的默认值
+            if (!meanValueInput.dataset.userModified) {
+                meanValueInput.value = '123.675, 116.28, 103.53';
+            }
+            if (!scaleValueInput.dataset.userModified) {
+                scaleValueInput.value = '0.01712475, 0.017507, 0.01742919';
+            }
+        } else {
+            // YOLO模型配置
+            meanValueGroup.style.display = 'none';
+            meanValueInput.required = false;
+            
+            // 设置YOLO模型的默认值
+            if (!scaleValueInput.dataset.userModified) {
+                scaleValueInput.value = '0.003921568627451';
+            }
+        }
     }
 }

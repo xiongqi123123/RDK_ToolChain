@@ -30,13 +30,17 @@ def model_training():
     try:
         config = TrainingConfig.from_form(request.form)
         config.validate()
-        kpt_shape = [config.kpt_num, config.kpt_dim] if config.model_tag == 'pose' else None
-        yaml_path = create_yaml_config(
-            config.dataset_path,
-            config.num_classes,
-            config.labels,
-            kpt_shape
-        )
+        
+        # 只有YOLO模型需要YAML配置文件
+        yaml_path = None
+        if config.model_series == 'yolo':
+            kpt_shape = [config.kpt_num, config.kpt_dim] if config.model_tag == 'pose' else None
+            yaml_path = create_yaml_config(
+                config.dataset_path,
+                config.num_classes,
+                config.labels,
+                kpt_shape
+            )
         
         def run_training():
             try:
