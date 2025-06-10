@@ -204,14 +204,23 @@ async function checkAndRestoreExportState() {
         if (result.serverStatus) {
             // 根据服务器状态恢复UI
             restoreExportUI(result.serverStatus);
-            // 开始轮询
-            setTimeout(pollExportStatus, 1000);
+            
+            // 如果不是刚完成的任务，开始轮询
+            if (!result.justCompleted) {
+                setTimeout(pollExportStatus, 1000);
+            }
+        } else if (result.restoreCompleted) {
+            // 恢复已完成的任务状态
+            restoreCompletedExportUI();
         } else if (result.networkError) {
             // 网络错误，根据本地状态恢复
             restoreExportUIFromLocal();
             setTimeout(pollExportStatus, 5000);
         }
     }
+    
+    // 恢复表单状态
+    restoreFormState();
 }
 
 // 根据服务器状态恢复导出UI
@@ -277,6 +286,110 @@ function restoreExportUIFromLocal() {
     const logs = exportStateManager.getState().logs;
     if (logs && logs.length > 0) {
         DOMUtils.restoreLogsToContainer('.log-output', logs);
+    }
+}
+
+// 恢复已完成的导出UI
+function restoreCompletedExportUI() {
+    const savedState = exportStateManager.getState();
+    console.log('恢复已完成的导出任务UI...');
+    
+    const statusHtml = `
+        <div class="status-item">
+            <h3>导出状态: <span class="status-badge completed">已完成</span></h3>
+            <p>导出已于: ${new Date(savedState.timestamp).toLocaleString()} 完成</p>
+        </div>
+        <div class="status-item">
+            <h3>导出日志:</h3>
+            <div class="log-output" id="log-output"></div>
+        </div>
+    `;
+    
+    DOMUtils.updateElement('#exportProgress', statusHtml, true);
+    DOMUtils.toggleDisplay('.export-controls', false);
+    
+    // 恢复日志
+    const logs = savedState.logs;
+    if (logs && logs.length > 0) {
+        console.log('恢复导出日志，共' + logs.length + '条');
+        DOMUtils.restoreLogsToContainer('#log-output', logs);
+    }
+    
+    console.log('已完成任务UI恢复完成');
+}
+
+// 恢复表单状态
+function restoreFormState() {
+    const savedConfig = exportStateManager.getState().config;
+    if (savedConfig) {
+        console.log('恢复导出表单状态:', savedConfig);
+        
+        // 先恢复非级联选择字段
+        Object.keys(savedConfig).forEach(key => {
+            if (!['modelSeries', 'modelVersion', 'modelTag', 'modelSize'].includes(key)) {
+                const element = document.getElementById(key);
+                if (element && savedConfig[key]) {
+                    element.value = savedConfig[key];
+                    console.log(`恢复导出字段 ${key}: ${savedConfig[key]}`);
+                }
+            }
+        });
+        
+        // 按顺序恢复级联选择字段
+        restoreExportCascadeFields();
+    }
+}
+
+// 恢复导出级联选择字段
+function restoreExportCascadeFields() {
+    const savedConfig = exportStateManager.getState().config;
+    
+    // 第一步：恢复模型系列
+    if (savedConfig.modelSeries) {
+        console.log('恢复导出模型系列:', savedConfig.modelSeries);
+        const modelSeriesSelect = document.getElementById('modelSeries');
+        if (modelSeriesSelect) {
+            modelSeriesSelect.value = savedConfig.modelSeries;
+            
+            // 第二步：更新版本选项并恢复版本选择
+            updateVersionOptions(savedConfig.modelSeries);
+            
+            if (savedConfig.modelVersion) {
+                setTimeout(() => {
+                    console.log('恢复导出模型版本:', savedConfig.modelVersion);
+                    const modelVersionSelect = document.getElementById('modelVersion');
+                    if (modelVersionSelect) {
+                        modelVersionSelect.value = savedConfig.modelVersion;
+                        
+                        // 第三步：更新Tag选项并恢复Tag选择
+                        updateTagOptions(savedConfig.modelSeries, savedConfig.modelVersion);
+                        
+                        if (savedConfig.modelTag) {
+                            setTimeout(() => {
+                                console.log('恢复导出模型Tag:', savedConfig.modelTag);
+                                const modelTagSelect = document.getElementById('modelTag');
+                                if (modelTagSelect) {
+                                    modelTagSelect.value = savedConfig.modelTag;
+                                    
+                                    // 第四步：更新大小选项并恢复大小选择
+                                    updateSizeOptions(savedConfig.modelSeries, savedConfig.modelVersion, savedConfig.modelTag);
+                                    
+                                    if (savedConfig.modelSize) {
+                                        setTimeout(() => {
+                                            console.log('恢复导出模型大小:', savedConfig.modelSize);
+                                            const modelSizeSelect = document.getElementById('modelSize');
+                                            if (modelSizeSelect) {
+                                                modelSizeSelect.value = savedConfig.modelSize;
+                                            }
+                                        }, 100);
+                                    }
+                                }
+                            }, 100);
+                        }
+                    }
+                }, 100);
+            }
+        }
     }
 }
 

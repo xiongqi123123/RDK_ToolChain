@@ -61,8 +61,14 @@ async function checkAndRestoreDeleteState() {
         if (result.serverStatus) {
             // 根据服务器状态恢复UI
             restoreDeleteUI(result.serverStatus);
-            // 开始轮询
-            setTimeout(pollDeleteStatus, 1000);
+            
+            // 如果不是刚完成的任务，开始轮询
+            if (!result.justCompleted) {
+                setTimeout(pollDeleteStatus, 1000);
+            }
+        } else if (result.restoreCompleted) {
+            // 恢复已完成的任务状态
+            restoreCompletedDeleteUI();
         } else if (result.networkError) {
             // 网络错误，根据本地状态恢复
             restoreDeleteUIFromLocal();
@@ -147,11 +153,45 @@ function restoreDeleteUIFromLocal() {
     }
 }
 
+// 恢复已完成的删除UI  
+function restoreCompletedDeleteUI() {
+    const savedState = deleteStateManager.getState();
+    console.log('恢复已完成的删除任务UI...');
+    
+    const statusHtml = `
+        <div class="status-item">
+            <h3>操作状态: <span class="status-badge completed">已完成</span></h3>
+            <p>操作已于: ${new Date(savedState.timestamp).toLocaleString()} 完成</p>
+        </div>
+        <div class="status-item">
+            <h3>操作日志:</h3>
+            <div class="log-output" id="log-output"></div>
+        </div>
+    `;
+    
+    DOMUtils.updateElement('#deleteProgress', statusHtml, true);
+    DOMUtils.toggleDisplay('.delete-controls', false);
+    
+    // 恢复日志
+    const logs = savedState.logs;
+    if (logs && logs.length > 0) {
+        console.log('恢复删除日志，共' + logs.length + '条');
+        DOMUtils.restoreLogsToContainer('#log-output', logs);
+    }
+    
+    // 如果有检测到的节点，恢复节点选择状态
+    if (savedState.operationPhase === 'selecting' && savedState.detectedNodes) {
+        restoreNodeSelection(savedState.detectedNodes, savedState.selectedNodes);
+    }
+    
+    console.log('已完成任务UI恢复完成');
+}
+
 // 恢复表单状态
 function restoreFormState() {
     const savedConfig = deleteStateManager.getState().config;
     if (savedConfig) {
-        console.log('恢复表单状态:', savedConfig);
+        console.log('恢复删除表单状态:', savedConfig);
         
         // 恢复模型路径
         if (savedConfig.modelPath) {
@@ -175,12 +215,78 @@ function restoreNodeSelection(detectedNodes, selectedNodes = []) {
         detectedNodes.forEach((node, index) => {
             const isSelected = selectedNodes.includes(node.name);
             nodesHtml += `
-                <div class="node-item" style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-                    <label>
-                        <input type="checkbox" class="node-checkbox" value="${node.name}" 
-                               style="margin-right: 10px;" ${isSelected ? 'checked' : ''}>
-                        <strong>输出:</strong> ${node.output}<br>
-                        <strong>名称:</strong> ${node.name}
+                <div class="node-item" style="
+                    margin: 8px 0; 
+                    padding: 15px; 
+                    border: 2px solid #e8f4fd; 
+                    border-radius: 8px;
+                    background: linear-gradient(145deg, #ffffff, #f8f9fa);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                " onmouseover="this.style.borderColor='#ff8c00'; this.style.boxShadow='0 4px 12px rgba(255,140,0,0.2)'" 
+                   onmouseout="this.style.borderColor='#e8f4fd'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
+                    <label style="cursor: pointer; display: block; width: 100%;">
+                        <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                            <input type="checkbox" class="node-checkbox" value="${node.name}" 
+                                   style="
+                                       margin-right: 12px; 
+                                       width: 18px; 
+                                       height: 18px; 
+                                       accent-color: #ff8c00;
+                                       cursor: pointer;
+                                   " ${isSelected ? 'checked' : ''}>
+                            <div style="
+                                background: #ff8c00; 
+                                color: white; 
+                                padding: 3px 10px; 
+                                border-radius: 12px; 
+                                font-size: 13px; 
+                                font-weight: bold;
+                                text-transform: uppercase;
+                            ">节点 ${index + 1}</div>
+                        </div>
+                        <div style="margin-left: 30px;">
+                            <div style="margin-bottom: 6px;">
+                                <span style="
+                                    color: #666; 
+                                    font-size: 14px; 
+                                    font-weight: 600;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.5px;
+                                ">输出</span>
+                                <div style="
+                                    color: #333; 
+                                    font-family: 'Courier New', monospace; 
+                                    font-size: 15px; 
+                                    margin-top: 2px;
+                                    padding: 4px 8px;
+                                    background: #f8f9fa;
+                                    border-radius: 4px;
+                                    border-left: 3px solid #007bff;
+                                ">${node.output}</div>
+                            </div>
+                            <div>
+                                <span style="
+                                    color: #666; 
+                                    font-size: 14px; 
+                                    font-weight: 600;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.5px;
+                                ">名称</span>
+                                <div style="
+                                    color: #333; 
+                                    font-family: 'Courier New', monospace; 
+                                    font-size: 15px; 
+                                    margin-top: 2px;
+                                    padding: 4px 8px;
+                                    background: #f8f9fa;
+                                    border-radius: 4px;
+                                    border-left: 3px solid #28a745;
+                                    word-break: break-all;
+                                ">${node.name}</div>
+                            </div>
+                        </div>
                     </label>
                 </div>`;
         });
@@ -480,11 +586,78 @@ function showNodeSelection(nodes) {
     let nodesHtml = '';
     nodes.forEach((node, index) => {
         nodesHtml += `
-            <div class="node-item" style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-                <label>
-                    <input type="checkbox" class="node-checkbox" value="${node.name}" style="margin-right: 10px;">
-                    <strong>输出:</strong> ${node.output}<br>
-                    <strong>名称:</strong> ${node.name}
+            <div class="node-item" style="
+                margin: 8px 0; 
+                padding: 15px; 
+                border: 2px solid #e8f4fd; 
+                border-radius: 8px;
+                background: linear-gradient(145deg, #ffffff, #f8f9fa);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                transition: all 0.3s ease;
+                cursor: pointer;
+            " onmouseover="this.style.borderColor='#ff8c00'; this.style.boxShadow='0 4px 12px rgba(255,140,0,0.2)'" 
+               onmouseout="this.style.borderColor='#e8f4fd'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'">
+                <label style="cursor: pointer; display: block; width: 100%;">
+                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <input type="checkbox" class="node-checkbox" value="${node.name}" 
+                               style="
+                                   margin-right: 12px; 
+                                   width: 18px; 
+                                   height: 18px; 
+                                   accent-color: #ff8c00;
+                                   cursor: pointer;
+                               ">
+                        <div style="
+                            background: #ff8c00; 
+                            color: white; 
+                            padding: 3px 10px; 
+                            border-radius: 12px; 
+                            font-size: 13px; 
+                            font-weight: bold;
+                            text-transform: uppercase;
+                        ">节点 ${index + 1}</div>
+                    </div>
+                    <div style="margin-left: 30px;">
+                        <div style="margin-bottom: 6px;">
+                            <span style="
+                                color: #666; 
+                                font-size: 14px; 
+                                font-weight: 600;
+                                text-transform: uppercase;
+                                letter-spacing: 0.5px;
+                            ">输出</span>
+                            <div style="
+                                color: #333; 
+                                font-family: 'Courier New', monospace; 
+                                font-size: 15px; 
+                                margin-top: 2px;
+                                padding: 4px 8px;
+                                background: #f8f9fa;
+                                border-radius: 4px;
+                                border-left: 3px solid #007bff;
+                            ">${node.output}</div>
+                        </div>
+                        <div>
+                            <span style="
+                                color: #666; 
+                                font-size: 14px; 
+                                font-weight: 600;
+                                text-transform: uppercase;
+                                letter-spacing: 0.5px;
+                            ">名称</span>
+                            <div style="
+                                color: #333; 
+                                font-family: 'Courier New', monospace; 
+                                font-size: 15px; 
+                                margin-top: 2px;
+                                padding: 4px 8px;
+                                background: #f8f9fa;
+                                border-radius: 4px;
+                                border-left: 3px solid #28a745;
+                                word-break: break-all;
+                            ">${node.name}</div>
+                        </div>
+                    </div>
                 </label>
             </div>`;
     });

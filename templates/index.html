@@ -26,7 +26,7 @@
                 <li><a href="{{ url_for('model_conversion') }}">模型转换</a></li>
                 <li><a href="{{ url_for('model_delete') }}">模型摘除</a></li>
                 <li><a href="{{ url_for('model_detection') }}">模型检测</a></li>
-                <li><a href="{{ url_for('model_testing') }}">模型测试</a></li>
+                <!-- <li><a href="{{ url_for('model_testing') }}">模型测试</a></li> -->
                 <li><a href="{{ url_for('development_tools') }}">开发工具</a></li>
             </ul>
         </nav>
@@ -82,8 +82,7 @@
         </div>
     </footer>
 
-    <!-- 引入通用状态管理脚本 -->
-    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    <!-- 通用状态管理脚本由各个页面单独加载，避免重复加载 -->
     
     <script>
     async function downloadLogs() {

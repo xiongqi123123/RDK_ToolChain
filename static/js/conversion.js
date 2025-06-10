@@ -62,8 +62,14 @@ async function checkAndRestoreConversionState() {
         if (result.serverStatus) {
             // 根据服务器状态恢复UI
             restoreConversionUI(result.serverStatus);
-            // 开始轮询
-            setTimeout(pollConversionStatus, 1000);
+            
+            // 如果不是刚完成的任务，开始轮询
+            if (!result.justCompleted) {
+                setTimeout(pollConversionStatus, 1000);
+            }
+        } else if (result.restoreCompleted) {
+            // 恢复已完成的任务状态
+            restoreCompletedConversionUI();
         } else if (result.networkError) {
             // 网络错误，根据本地状态恢复
             restoreConversionUIFromLocal();
@@ -139,63 +145,76 @@ function restoreConversionUIFromLocal() {
     }
 }
 
+// 恢复已完成的转换UI
+function restoreCompletedConversionUI() {
+    const savedState = conversionStateManager.getState();
+    console.log('恢复已完成的转换任务UI...');
+    
+    const statusHtml = `
+        <div class="status-item">
+            <h3>转换状态: <span class="status-badge completed">已完成</span></h3>
+            <p>转换已于: ${new Date(savedState.timestamp).toLocaleString()} 完成</p>
+        </div>
+        <div class="status-item">
+            <h3>转换日志:</h3>
+            <div class="log-output" id="log-output"></div>
+        </div>
+    `;
+    
+    DOMUtils.updateElement('#conversionProgress', statusHtml, true);
+    DOMUtils.toggleDisplay('.conversion-controls', false);
+    
+    // 恢复日志
+    const logs = savedState.logs;
+    if (logs && logs.length > 0) {
+        console.log('恢复转换日志，共' + logs.length + '条');
+        DOMUtils.restoreLogsToContainer('#log-output', logs);
+    }
+    
+    console.log('已完成任务UI恢复完成');
+}
+
 // 恢复表单状态
 function restoreFormState() {
     const savedConfig = conversionStateManager.getState().config;
     if (savedConfig) {
-        console.log('恢复表单状态:', savedConfig);
+        console.log('恢复转换表单状态:', savedConfig);
         
-        // 恢复基本字段
+        // 恢复各个表单字段
         Object.keys(savedConfig).forEach(key => {
-            if (key.endsWith('[]')) return; // 跳过数组字段
-            
-            const element = document.getElementById(key) || document.querySelector(`[name="${key}"]`);
+            const element = document.getElementById(key);
             if (element && savedConfig[key]) {
                 element.value = savedConfig[key];
             }
         });
         
-        // 恢复节点信息（如果有的话）
-        if (savedConfig['nodePath[]'] && Array.isArray(savedConfig['nodePath[]'])) {
-            restoreNodeInfoFields(savedConfig);
-        }
-    }
-}
-
-// 恢复节点信息字段
-function restoreNodeInfoFields(config) {
-    const nodePaths = config['nodePath[]'];
-    const nodeInputTypes = config['nodeInputType[]'];
-    const nodeOutputTypes = config['nodeOutputType[]'];
-    
-    if (!nodePaths || !Array.isArray(nodePaths)) return;
-    
-    // 清除现有的节点信息
-    const container = document.getElementById('nodeInfoContainer');
-    container.innerHTML = '';
-    
-    // 重新创建节点信息
-    nodePaths.forEach((path, index) => {
-        if (path) { // 只有非空路径才创建
-            addNodeInfo();
-            const nodeItems = container.querySelectorAll('.node-info-item');
-            const lastItem = nodeItems[nodeItems.length - 1];
+        // 恢复动态节点信息
+        if (savedConfig.nodePath && Array.isArray(savedConfig.nodePath)) {
+            // 重建动态节点配置区域
+            const savedNodePaths = savedConfig.nodePath;
+            const savedInputTypes = savedConfig.nodeInputType || [];
+            const savedOutputTypes = savedConfig.nodeOutputType || [];
             
-            if (lastItem) {
-                const pathInput = lastItem.querySelector('[name="nodePath[]"]');
-                const inputTypeSelect = lastItem.querySelector('[name="nodeInputType[]"]');
-                const outputTypeSelect = lastItem.querySelector('[name="nodeOutputType[]"]');
+            // 清空现有的节点配置
+            const nodeInfoContainer = document.getElementById('nodeInfoContainer');
+            nodeInfoContainer.innerHTML = '';
+            
+            // 重建保存的节点配置
+            for (let i = 0; i < savedNodePaths.length; i++) {
+                addNodeInfo();
+                const nodeInfos = document.querySelectorAll('.node-info');
+                const currentNodeInfo = nodeInfos[nodeInfos.length - 1];
                 
-                if (pathInput) pathInput.value = path;
-                if (inputTypeSelect && nodeInputTypes && nodeInputTypes[index]) {
-                    inputTypeSelect.value = nodeInputTypes[index];
-                }
-                if (outputTypeSelect && nodeOutputTypes && nodeOutputTypes[index]) {
-                    outputTypeSelect.value = nodeOutputTypes[index];
-                }
+                const pathInput = currentNodeInfo.querySelector('input[name="nodePath[]"]');
+                const inputTypeSelect = currentNodeInfo.querySelector('select[name="nodeInputType[]"]');
+                const outputTypeSelect = currentNodeInfo.querySelector('select[name="nodeOutputType[]"]');
+                
+                if (pathInput) pathInput.value = savedNodePaths[i] || '';
+                if (inputTypeSelect) inputTypeSelect.value = savedInputTypes[i] || '';
+                if (outputTypeSelect) outputTypeSelect.value = savedOutputTypes[i] || '';
             }
         }
-    });
+    }
 }
 
 // 处理转换表单提交

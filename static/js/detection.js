@@ -62,8 +62,14 @@ async function checkAndRestoreDetectionState() {
         if (result.serverStatus) {
             // 根据服务器状态恢复UI
             restoreDetectionUI(result.serverStatus);
-            // 开始轮询
-            setTimeout(pollDetectionStatus, 1000);
+            
+            // 如果不是刚完成的任务，开始轮询
+            if (!result.justCompleted) {
+                setTimeout(pollDetectionStatus, 1000);
+            }
+        } else if (result.restoreCompleted) {
+            // 恢复已完成的任务状态
+            restoreCompletedDetectionUI();
         } else if (result.networkError) {
             // 网络错误，根据本地状态恢复
             restoreDetectionUIFromLocal();
@@ -149,19 +155,54 @@ function restoreDetectionUIFromLocal() {
     }
 }
 
+// 恢复已完成的检测UI
+function restoreCompletedDetectionUI() {
+    const savedState = detectionStateManager.getState();
+    console.log('恢复已完成的检测任务UI...');
+    
+    const statusHtml = `
+        <div class="status-item">
+            <h3>检测状态: <span class="status-badge completed">已完成</span></h3>
+            <p>检测已于: ${new Date(savedState.timestamp).toLocaleString()} 完成</p>
+        </div>
+        <div class="status-item">
+            <h3>检测日志:</h3>
+            <div class="log-output" id="log-output"></div>
+        </div>
+    `;
+    
+    DOMUtils.updateElement('#detectionProgress', statusHtml, true);
+    DOMUtils.toggleDisplay('.detection-controls', false);
+    
+    // 恢复日志
+    const logs = savedState.logs;
+    if (logs && logs.length > 0) {
+        console.log('恢复检测日志，共' + logs.length + '条');
+        DOMUtils.restoreLogsToContainer('#log-output', logs);
+    }
+    
+    // 恢复性能分析图片（如果有的话）
+    if (savedState.perfImage) {
+        console.log('恢复性能分析图片:', savedState.perfImage);
+        showPerfImage(savedState.perfImage);
+    }
+    
+    console.log('已完成任务UI恢复完成');
+}
+
 // 恢复表单状态
 function restoreFormState() {
     const savedConfig = detectionStateManager.getState().config;
     if (savedConfig) {
-        console.log('恢复表单状态:', savedConfig);
+        console.log('恢复检测表单状态:', savedConfig);
         
-        // 恢复模型路径
-        if (savedConfig.modelPath) {
-            const modelPathInput = document.getElementById('modelPath');
-            if (modelPathInput) {
-                modelPathInput.value = savedConfig.modelPath;
+        // 恢复各个表单字段
+        Object.keys(savedConfig).forEach(key => {
+            const element = document.getElementById(key);
+            if (element && savedConfig[key]) {
+                element.value = savedConfig[key];
             }
-        }
+        });
     }
 }
 
@@ -489,8 +530,11 @@ function navigateUp() {
     loadDirectory(parentPath);
 }
 
-// 为关闭按钮添加事件监听
-document.querySelector('.close').onclick = closeFileBrowser;
+// 为关闭按钮添加事件监听（如果存在的话）
+const closeBtn = document.querySelector('.close');
+if (closeBtn) {
+    closeBtn.onclick = closeFileBrowser;
+}
 
 // 点击模态框外部关闭
 window.onclick = function(event) {

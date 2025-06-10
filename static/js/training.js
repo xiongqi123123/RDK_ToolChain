@@ -124,17 +124,19 @@ const trainingStatus = {
     currentEpoch: 0,
     config: null,
     logs: [],
+    status: 'idle',
     
-    // 保存状态到localStorage
-    save: function() {
-        const stateData = {
-            isTraining: this.isTraining,
-            totalEpochs: this.totalEpochs,
-            currentEpoch: this.currentEpoch,
-            config: this.config,
-            logs: this.logs,
-            timestamp: Date.now()
-        };
+            // 保存状态到localStorage
+        save: function() {
+            const stateData = {
+                isTraining: this.isTraining,
+                totalEpochs: this.totalEpochs,
+                currentEpoch: this.currentEpoch,
+                config: this.config,
+                logs: this.logs,
+                status: this.status || 'idle',
+                timestamp: Date.now()
+            };
         localStorage.setItem('trainingStatus', JSON.stringify(stateData));
         console.log('训练状态已保存:', stateData);
     },
@@ -152,6 +154,7 @@ const trainingStatus = {
                     this.currentEpoch = stateData.currentEpoch || 0;
                     this.config = stateData.config || null;
                     this.logs = stateData.logs || [];
+                    this.status = stateData.status || 'idle';
                     console.log('训练状态已恢复:', stateData);
                     return true;
                 } else {
@@ -166,16 +169,17 @@ const trainingStatus = {
         return false;
     },
     
-    // 清除保存的状态
-    clear: function() {
-        localStorage.removeItem('trainingStatus');
-        this.isTraining = false;
-        this.totalEpochs = 0;
-        this.currentEpoch = 0;
-        this.config = null;
-        this.logs = [];
-        console.log('训练状态已清除');
-    },
+            // 清除保存的状态
+        clear: function() {
+            localStorage.removeItem('trainingStatus');
+            this.isTraining = false;
+            this.totalEpochs = 0;
+            this.currentEpoch = 0;
+            this.config = null;
+            this.logs = [];
+            this.status = 'idle';
+            console.log('训练状态已清除');
+        },
     
     // 更新状态并保存
     update: function(updates) {
@@ -281,6 +285,21 @@ function initializePage() {
 async function checkAndRestoreTrainingState() {
     try {
         console.log('检查服务器训练状态...');
+        
+        // 首先检查本地是否有已完成的任务状态
+        if (trainingStatus.config && !trainingStatus.isTraining && trainingStatus.status === 'completed') {
+            console.log('发现已完成的训练任务状态，询问用户是否恢复');
+            const shouldRestoreCompleted = await askUserRestoreTraining();
+            if (shouldRestoreCompleted) {
+                restoreCompletedTrainingUI();
+                restoreFormState();
+                return;
+            } else {
+                // 用户选择不恢复，清除旧状态
+                trainingStatus.clear();
+            }
+        }
+        
         const response = await fetch('/api/training-status');
         
         if (response.ok) {
@@ -296,19 +315,38 @@ async function checkAndRestoreTrainingState() {
                     isTraining: true,
                     totalEpochs: serverStatus.config?.epochs || trainingStatus.totalEpochs,
                     currentEpoch: serverStatus.current_epoch || 0,
-                    config: serverStatus.config || trainingStatus.config
+                    config: serverStatus.config || trainingStatus.config,
+                    status: 'running'
                 });
                 
                 // 恢复UI状态
                 restoreTrainingUI(serverStatus);
                 
+                // 恢复表单状态
+                restoreFormState();
+                
                 // 开始轮询
                 setTimeout(pollTrainingStatus, 1000);
                 
             } else if (serverStatus.status === 'stopped' || serverStatus.status === 'completed') {
-                // 如果任务已完成或停止，清除本地状态
-                console.log('服务器任务已结束，清除本地状态');
-                trainingStatus.clear();
+                console.log('服务器训练任务已结束');
+                
+                // 检查本地是否有相应的状态，如果有且是运行中状态，需要更新为完成状态
+                if (trainingStatus.isTraining) {
+                    console.log('更新本地状态为已完成');
+                    trainingStatus.update({
+                        isTraining: false,
+                        status: serverStatus.status
+                    });
+                    
+                    // 如果是刚完成的任务，询问用户是否查看结果
+                    const shouldViewResult = await askUserViewTrainingResult();
+                    if (shouldViewResult) {
+                        restoreCompletedTrainingUI();
+                        restoreFormState();
+                        return;
+                    }
+                }
             }
         } else {
             console.log('无法获取服务器状态，可能没有任务在运行');
@@ -320,7 +358,18 @@ async function checkAndRestoreTrainingState() {
         }
     } catch (error) {
         console.error('检查服务器状态失败:', error);
-        // 网络错误时，如果有本地状态，尝试恢复UI
+        
+                 // 网络错误时，检查本地是否有完成的任务状态
+         if (trainingStatus.config && !trainingStatus.isTraining && trainingStatus.status === 'completed') {
+             const shouldRestoreCompleted = await askUserRestoreTraining();
+             if (shouldRestoreCompleted) {
+                 restoreCompletedTrainingUI();
+                 restoreFormState();
+                 return;
+             }
+         }
+        
+        // 如果有本地状态，尝试恢复UI
         if (trainingStatus.isTraining) {
             console.log('网络错误，但尝试根据本地状态恢复UI');
             restoreTrainingUIFromLocal();
@@ -425,6 +474,294 @@ function restoreTrainingUIFromLocal() {
     }
 }
 
+// 恢复已完成的训练UI
+function restoreCompletedTrainingUI() {
+    console.log('恢复已完成的训练任务UI...');
+    
+    const trainingProgress = document.getElementById('trainingProgress');
+    const trainingControls = document.querySelector('.training-controls');
+    
+    trainingProgress.innerHTML = `
+        <div class="status-item">
+            <h3>训练状态: <span class="status-badge completed">已完成</span></h3>
+            <p>训练完成时间: ${new Date(trainingStatus.config?.timestamp || Date.now()).toLocaleString()}</p>
+        </div>
+        <div class="status-item">
+            <h3>训练配置:</h3>
+            <pre>模型: ${trainingStatus.config?.modelSeries} ${trainingStatus.config?.modelVersion} ${trainingStatus.config?.modelTag} ${trainingStatus.config?.modelSize}
+总轮次: ${trainingStatus.totalEpochs}
+数据集: ${trainingStatus.config?.datasetPath || '未知'}</pre>
+        </div>
+        <div class="status-item">
+            <h3>训练日志:</h3>
+            <div class="log-output"></div>
+        </div>
+    `;
+    
+    trainingControls.style.display = 'none';
+    
+    // 恢复日志
+    const logOutput = document.querySelector('.log-output');
+    if (trainingStatus.logs && trainingStatus.logs.length > 0) {
+        console.log('恢复训练日志，共' + trainingStatus.logs.length + '条');
+        trainingStatus.logs.forEach(log => {
+            const logDiv = document.createElement('div');
+            logDiv.className = log.type;
+            logDiv.textContent = log.content;
+            logOutput.appendChild(logDiv);
+        });
+        logOutput.scrollTop = logOutput.scrollHeight;
+    }
+    
+    console.log('已完成任务UI恢复完成');
+}
+
+// 恢复表单状态
+function restoreFormState() {
+    if (trainingStatus.config) {
+        console.log('恢复训练表单状态:', trainingStatus.config);
+        
+        // 先恢复非级联选择字段
+        Object.keys(trainingStatus.config).forEach(key => {
+            if (!['modelSeries', 'modelVersion', 'modelTag', 'modelSize'].includes(key)) {
+                const element = document.getElementById(key);
+                if (element && trainingStatus.config[key]) {
+                    element.value = trainingStatus.config[key];
+                    console.log(`恢复字段 ${key}: ${trainingStatus.config[key]}`);
+                }
+            }
+        });
+        
+        // 按顺序恢复级联选择字段
+        restoreCascadeFields();
+    }
+}
+
+// 恢复级联选择字段
+function restoreCascadeFields() {
+    const config = trainingStatus.config;
+    
+    // 第一步：恢复模型系列
+    if (config.modelSeries) {
+        console.log('恢复模型系列:', config.modelSeries);
+        const modelSeriesSelect = document.getElementById('modelSeries');
+        if (modelSeriesSelect) {
+            modelSeriesSelect.value = config.modelSeries;
+            
+            // 第二步：更新版本选项并恢复版本选择
+            updateVersionOptions(config.modelSeries);
+            
+            if (config.modelVersion) {
+                setTimeout(() => {
+                    console.log('恢复模型版本:', config.modelVersion);
+                    const modelVersionSelect = document.getElementById('modelVersion');
+                    if (modelVersionSelect) {
+                        modelVersionSelect.value = config.modelVersion;
+                        
+                        // 第三步：更新Tag选项并恢复Tag选择
+                        updateTagOptions(config.modelSeries, config.modelVersion);
+                        
+                        if (config.modelTag) {
+                            setTimeout(() => {
+                                console.log('恢复模型Tag:', config.modelTag);
+                                const modelTagSelect = document.getElementById('modelTag');
+                                if (modelTagSelect) {
+                                    modelTagSelect.value = config.modelTag;
+                                    
+                                    // 第四步：更新大小选项并恢复大小选择
+                                    updateSizeOptions(config.modelSeries, config.modelVersion, config.modelTag);
+                                    
+                                    if (config.modelSize) {
+                                        setTimeout(() => {
+                                            console.log('恢复模型大小:', config.modelSize);
+                                            const modelSizeSelect = document.getElementById('modelSize');
+                                            if (modelSizeSelect) {
+                                                modelSizeSelect.value = config.modelSize;
+                                            }
+                                        }, 100);
+                                    }
+                                }
+                            }, 100);
+                        }
+                    }
+                }, 100);
+            }
+        }
+    }
+}
+
+// 询问用户是否恢复已完成的训练任务
+async function askUserRestoreTraining() {
+    return new Promise((resolve) => {
+        const timeStr = new Date(trainingStatus.config?.timestamp || Date.now()).toLocaleString();
+        let taskInfo = `任务时间: ${timeStr}`;
+        
+        if (trainingStatus.config) {
+            taskInfo += `\n模型类型: ${trainingStatus.config.modelSeries || '未知'}`;
+            taskInfo += `\n模型版本: ${trainingStatus.config.modelVersion || '未知'}`;
+            taskInfo += `\n数据集: ${trainingStatus.config.datasetPath || '未知'}`;
+            taskInfo += `\n训练轮次: ${trainingStatus.totalEpochs || '未知'}`;
+        }
+        
+        const modal = createRestoreModal(taskInfo, resolve);
+        document.body.appendChild(modal);
+    });
+}
+
+// 询问用户是否查看刚完成的训练结果
+async function askUserViewTrainingResult() {
+    return new Promise((resolve) => {
+        const modal = createViewResultModal(resolve);
+        document.body.appendChild(modal);
+    });
+}
+
+// 创建恢复任务模态框
+function createRestoreModal(taskInfo, resolve) {
+    const modal = document.createElement('div');
+    modal.className = 'modal restore-modal';
+    modal.style.cssText = `
+        display: block;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    `;
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 400px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        ">
+            <h3 style="color: #333; margin-bottom: 15px;">发现之前的任务结果</h3>
+            <div style="
+                background-color: #f5f5f5;
+                padding: 15px;
+                border-radius: 4px;
+                margin: 15px 0;
+                text-align: left;
+                white-space: pre-line;
+                word-wrap: break-word;
+                word-break: break-all;
+                font-size: 14px;
+                color: #666;
+                max-height: 200px;
+                overflow-y: auto;
+            ">${taskInfo}</div>
+            <p style="color: #666; margin: 15px 0;">是否要查看之前的任务结果？</p>
+            <div style="margin-top: 20px;">
+                <button id="restoreYes" style="
+                    background-color: #ff8c00;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    margin: 0 10px;
+                    font-size: 14px;
+                ">查看结果</button>
+                <button id="restoreNo" style="
+                    background-color: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    margin: 0 10px;
+                    font-size: 14px;
+                ">开始新任务</button>
+            </div>
+        </div>
+    `;
+    
+    modal.querySelector('#restoreYes').onclick = () => {
+        document.body.removeChild(modal);
+        resolve(true);
+    };
+    
+    modal.querySelector('#restoreNo').onclick = () => {
+        document.body.removeChild(modal);
+        resolve(false);
+    };
+    
+    return modal;
+}
+
+// 创建查看结果模态框
+function createViewResultModal(resolve) {
+    const modal = document.createElement('div');
+    modal.className = 'modal view-result-modal';
+    modal.style.cssText = `
+        display: block;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    `;
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 350px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        ">
+            <h3 style="color: #28a745; margin-bottom: 15px;">任务已完成！</h3>
+            <p style="color: #666; margin: 15px 0;">是否要查看任务结果？</p>
+            <div style="margin-top: 20px;">
+                <button id="viewYes" style="
+                    background-color: #28a745;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    margin: 0 10px;
+                    font-size: 14px;
+                ">查看结果</button>
+                <button id="viewNo" style="
+                    background-color: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    margin: 0 10px;
+                    font-size: 14px;
+                ">关闭</button>
+            </div>
+        </div>
+    `;
+    
+    modal.querySelector('#viewYes').onclick = () => {
+        document.body.removeChild(modal);
+        resolve(true);
+    };
+    
+    modal.querySelector('#viewNo').onclick = () => {
+        document.body.removeChild(modal);
+        resolve(false);
+    };
+    
+    return modal;
+}
+
 // 重置表单字段
 function resetFormFields(fieldIds) {
     console.log('重置字段:', fieldIds);
@@ -470,7 +807,8 @@ function handleFormSubmit(event) {
     trainingStatus.update({
         totalEpochs: epochs,
         config: config,
-        logs: [] // 清空之前的日志
+        logs: [], // 清空之前的日志
+        status: 'idle'
     });
     
     submitTrainingForm(formData);
@@ -493,7 +831,8 @@ function submitTrainingForm(formData) {
             trainingStatus.update({
                 isTraining: true,
                 totalEpochs: data.config.epochs,
-                currentEpoch: 0
+                currentEpoch: 0,
+                status: 'running'
             });
             
             // 更新UI
@@ -780,9 +1119,11 @@ function updateTrainingComplete(data) {
     const trainingProgress = document.getElementById('trainingProgress');
     const trainingControls = document.querySelector('.training-controls');
     
-    // 更新状态管理
+    // 更新状态管理 - 保留配置信息用于后续恢复
     trainingStatus.update({
-        isTraining: false
+        isTraining: false,
+        status: 'completed',
+        completedAt: Date.now()
     });
     
     if (trainingControls) {
@@ -798,7 +1139,7 @@ function updateTrainingComplete(data) {
     // 重新启用表单
     enableTrainingForm();
     
-    console.log('训练已完成');
+    console.log('训练已完成，状态已保存用于后续恢复');
 }
 
 // 更新训练停止状态
@@ -808,7 +1149,8 @@ function updateTrainingStopped(data) {
     
     // 更新状态管理
     trainingStatus.update({
-        isTraining: false
+        isTraining: false,
+        status: 'stopped'
     });
     
     if (trainingControls) {

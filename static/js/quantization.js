@@ -57,16 +57,25 @@ async function checkAndRestoreQuantizationState() {
     
     if (result.shouldRestore) {
         if (result.serverStatus) {
-            // 根据服务器状态恢复UI
+            // 根据服务器状态恢复UI  
             restoreQuantizationUI(result.serverStatus);
-            // 开始轮询
-            setTimeout(pollQuantizationStatus, 1000);
+            
+            // 如果不是刚完成的任务，开始轮询
+            if (!result.justCompleted) {
+                setTimeout(pollQuantizationStatus, 1000);
+            }
+        } else if (result.restoreCompleted) {
+            // 恢复已完成的任务状态
+            restoreCompletedQuantizationUI();
         } else if (result.networkError) {
             // 网络错误，根据本地状态恢复
             restoreQuantizationUIFromLocal();
             setTimeout(pollQuantizationStatus, 5000);
         }
     }
+    
+    // 恢复表单状态
+    restoreFormState();
 }
 
 // 根据服务器状态恢复量化UI
@@ -157,24 +166,24 @@ function handleQuantizationFormSubmit(event) {
 // 提交量化表单
 function submitQuantizationForm(formData) {
     console.log('提交量化表单...');
-    
-    // 显示加载状态
+        
+        // 显示加载状态
     const submitBtn = document.querySelector('#quantizationForm .submit-btn');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = '检查中...';
-    submitBtn.disabled = true;
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = '检查中...';
+        submitBtn.disabled = true;
 
     fetch('/model-quantization', {
-        method: 'POST',
-        body: formData
+                method: 'POST',
+                body: formData
     })
     .then(response => {
-        console.log('服务器响应状态:', response.status);
+            console.log('服务器响应状态:', response.status);
         return response.json();
     })
     .then(data => {
         console.log('服务器返回数据:', data);
-        
+            
         if (data.status === 'success') {
             console.log('量化检查启动成功');
             
@@ -198,8 +207,8 @@ function submitQuantizationForm(formData) {
         alert('提交检查失败: ' + error.message);
     })
     .finally(() => {
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
     });
 }
 
@@ -209,19 +218,19 @@ function showQuantizationStarted(data) {
     DOMUtils.toggleForm('#quantizationForm', true);
 
     const statusHtml = `
-        <div class="status-item">
+            <div class="status-item">
             <h3>检查状态: <span class="status-badge running">正在检查</span></h3>
-        </div>
-        <div class="status-item">
+            </div>
+            <div class="status-item">
             <h3>检查配置:</h3>
-            <pre>${JSON.stringify(data.config, null, 2)}</pre>
-        </div>
-        <div class="status-item">
+                <pre>${JSON.stringify(data.config, null, 2)}</pre>
+            </div>
+            <div class="status-item">
             <h3>运行日志:</h3>
             <div class="log-output" id="log-output"></div>
-        </div>
-    `;
-    
+            </div>
+        `;
+        
     DOMUtils.updateElement('#checkerProgress', statusHtml, true);
     DOMUtils.toggleDisplay('.checker-controls', true);
 }
@@ -285,7 +294,7 @@ function updateQuantizationLogOutput(data) {
             }
         });
     }
-    
+
     if (data.stdout) {
         const lines = data.stdout.split('\n');
         lines.forEach(line => {
@@ -296,11 +305,11 @@ function updateQuantizationLogOutput(data) {
             }
         });
     }
-    
+
     // 自动滚动到底部
     if (hasNewLogs) {
-        logOutput.scrollTop = logOutput.scrollHeight;
-    }
+    logOutput.scrollTop = logOutput.scrollHeight;
+}
 }
 
 // 更新量化完成状态
@@ -348,9 +357,9 @@ async function stopChecker() {
     
     if (result.success) {
         updateQuantizationStopped(result.data);
-    } else {
+            } else {
         alert('停止检查失败: ' + result.error);
-    }
+            }
 }
 
 // 文件浏览器相关功能
@@ -373,7 +382,7 @@ async function loadDirectory(path) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 path: path,
                 include_files: true,
                 file_pattern: '*.onnx'
@@ -411,12 +420,12 @@ function updateFileList(data) {
             `;
             div.onclick = () => selectFile(item.path);
         } else {
-            div.className = 'file-item folder';
-            div.innerHTML = `
-                <i class="fas fa-folder"></i>
-                <span>${item.name}</span>
-            `;
-            div.onclick = () => loadDirectory(item.path);
+        div.className = 'file-item folder';
+        div.innerHTML = `
+            <i class="fas fa-folder"></i>
+            <span>${item.name}</span>
+        `;
+        div.onclick = () => loadDirectory(item.path);
         }
         fileList.appendChild(div);
     });
@@ -432,8 +441,11 @@ function navigateUp() {
     loadDirectory(parentPath);
 }
 
-// 为关闭按钮添加事件监听
-document.querySelector('.close').onclick = closeFileBrowser;
+// 为关闭按钮添加事件监听（如果存在的话）
+const closeBtn = document.querySelector('.close');
+if (closeBtn) {
+    closeBtn.onclick = closeFileBrowser;
+}
 
 // 点击模态框外部关闭
 window.onclick = function(event) {
@@ -442,3 +454,48 @@ window.onclick = function(event) {
         closeFileBrowser();
     }
 };
+
+// 恢复已完成的量化UI
+function restoreCompletedQuantizationUI() {
+    const savedState = quantizationStateManager.getState();
+    console.log('恢复已完成的量化任务UI...');
+    
+    const statusHtml = `
+        <div class="status-item">
+            <h3>量化状态: <span class="status-badge completed">已完成</span></h3>
+            <p>量化已于: ${new Date(savedState.timestamp).toLocaleString()} 完成</p>
+        </div>
+        <div class="status-item">
+            <h3>量化日志:</h3>
+            <div class="log-output" id="log-output"></div>
+        </div>
+    `;
+    
+    DOMUtils.updateElement('#checkerProgress', statusHtml, true);
+    DOMUtils.toggleDisplay('.checker-controls', false);
+    
+    // 恢复日志
+    const logs = savedState.logs;
+    if (logs && logs.length > 0) {
+        console.log('恢复量化日志，共' + logs.length + '条');
+        DOMUtils.restoreLogsToContainer('#log-output', logs);
+    }
+    
+    console.log('已完成任务UI恢复完成');
+}
+
+// 恢复表单状态
+function restoreFormState() {
+    const savedConfig = quantizationStateManager.getState().config;
+    if (savedConfig) {
+        console.log('恢复量化表单状态:', savedConfig);
+        
+        // 恢复各个表单字段
+        Object.keys(savedConfig).forEach(key => {
+            const element = document.getElementById(key);
+            if (element && savedConfig[key]) {
+                element.value = savedConfig[key];
+            }
+        });
+    }
+}
