@@ -260,6 +260,8 @@ function initializePage() {
         console.error('找不到modelTag元素');
     }
     
+
+    
     // 绑定文件浏览器按钮事件
     const browseBtn = document.querySelector('.browse-btn');
     if (browseBtn) {
@@ -490,6 +492,7 @@ function restoreCompletedTrainingUI() {
             <h3>训练配置:</h3>
             <pre>模型: ${trainingStatus.config?.modelSeries} ${trainingStatus.config?.modelVersion} ${trainingStatus.config?.modelTag} ${trainingStatus.config?.modelSize}
 总轮次: ${trainingStatus.totalEpochs}
+图像尺寸: ${trainingStatus.config?.image_size || 640}x${trainingStatus.config?.image_size || 640}  
 数据集: ${trainingStatus.config?.datasetPath || '未知'}</pre>
         </div>
         <div class="status-item">
@@ -521,13 +524,31 @@ function restoreFormState() {
     if (trainingStatus.config) {
         console.log('恢复训练表单状态:', trainingStatus.config);
         
+        // 字段名映射（后端字段名 -> 前端元素ID）
+        const fieldMapping = {
+            'device': 'device',
+            'dataset_path': 'datasetPath',
+            'epochs': 'epochs',
+            'batch_size': 'batchSize',
+            'num_classes': 'numClasses',
+            'labels': 'labels',
+            'image_size': 'imageSize',
+            'kpt_num': 'kptNum',
+            'kpt_dim': 'kptDim'
+        };
+        
         // 先恢复非级联选择字段
         Object.keys(trainingStatus.config).forEach(key => {
             if (!['modelSeries', 'modelVersion', 'modelTag', 'modelSize'].includes(key)) {
-                const element = document.getElementById(key);
-                if (element && trainingStatus.config[key]) {
-                    element.value = trainingStatus.config[key];
-                    console.log(`恢复字段 ${key}: ${trainingStatus.config[key]}`);
+                const elementId = fieldMapping[key] || key;
+                const element = document.getElementById(elementId);
+                if (element && trainingStatus.config[key] !== undefined && trainingStatus.config[key] !== null) {
+                    if (key === 'labels' && Array.isArray(trainingStatus.config[key])) {
+                        element.value = trainingStatus.config[key].join('\n');
+                    } else {
+                        element.value = trainingStatus.config[key];
+                    }
+                    console.log(`恢复字段 ${key} -> ${elementId}: ${trainingStatus.config[key]}`);
                 }
             }
         });
@@ -877,6 +898,7 @@ function showTrainingStarted(config) {
 设备: ${config.device}
 轮次: ${config.epochs}
 批次大小: ${config.batch_size}
+图像尺寸: ${config.image_size}x${config.image_size}
 数据集: ${config.dataset_path}</pre>
         </div>
         <div class="status-item">

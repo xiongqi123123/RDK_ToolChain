@@ -19,6 +19,7 @@ class TrainingConfig:
     batch_size: int
     num_classes: int
     labels: List[str]
+    image_size: int = 640
     kpt_num: Optional[int] = None
     kpt_dim: Optional[int] = None
 
@@ -28,6 +29,7 @@ class TrainingConfig:
         try:
             kpt_num = int(form_data.get('kptNum', 0)) if form_data.get('kptNum') else None
             kpt_dim = int(form_data.get('kptDim', 0)) if form_data.get('kptDim') else None
+            image_size = int(form_data.get('imageSize', 640))
             
             return cls(
                 model_series=form_data.get('modelSeries', ''),
@@ -40,6 +42,7 @@ class TrainingConfig:
                 batch_size=int(form_data.get('batchSize', 0)),
                 num_classes=int(form_data.get('numClasses', 0)),
                 labels=form_data.get('labels', '').strip().split('\n') if form_data.get('labels') else [],
+                image_size=image_size,
                 kpt_num=kpt_num,
                 kpt_dim=kpt_dim
             )
@@ -65,6 +68,11 @@ class TrainingConfig:
         
         if len(self.labels) != self.num_classes:
             raise ValueError(f"标签数量({len(self.labels)})与类别数量({self.num_classes})不匹配")
+        
+        # 验证图像尺寸
+        if self.image_size < 32 or self.image_size > 2048:
+            raise ValueError("图像尺寸必须在32-2048之间")
+        
             
         # 验证关键点配置
         if self.model_version == 'yolov8' and self.model_tag == 'pose':
@@ -141,7 +149,7 @@ class TrainingProcess:
                     "--data", rel_yaml_path,
                     "--epochs", str(config.epochs),
                     "--batch-size", str(config.batch_size),
-                    "--img", "640",
+                    "--img", str(config.image_size),
                     "--device", device,
                     "--project", str(save_dir), 
                 ]

@@ -46,7 +46,11 @@
                 </div>
                 <small class="help-text">请选择需要导出的模型文件（.pt格式）</small>
             </div>
-
+            <div class="form-group">
+                <label for="imageSize">图像输入尺寸</label>
+                <input type="number" id="imageSize" name="imageSize" min="32" max="2048" step="32" value="640" required>
+                <small class="help-text">导出时的图像输入尺寸（正方形），常用值：320、416、512、640、832、1024。</small>
+            </div>
             <div class="form-group">
                 <label for="exportFormat">导出格式</label>
                 <select id="exportFormat" name="exportFormat" required>
@@ -55,6 +59,8 @@
                 </select>
                 <small class="help-text">选择适合您目标平台的模型格式</small>
             </div>
+
+
 
             <div class="form-actions">
                 <button type="submit" class="submit-btn">开始导出</button>

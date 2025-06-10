@@ -324,13 +324,21 @@ function restoreFormState() {
     if (savedConfig) {
         console.log('恢复导出表单状态:', savedConfig);
         
+        // 字段名映射（后端字段名 -> 前端元素ID）
+        const fieldMapping = {
+            'model_path': 'modelPath',
+            'export_format': 'exportFormat',
+            'image_size': 'imageSize'
+        };
+        
         // 先恢复非级联选择字段
         Object.keys(savedConfig).forEach(key => {
             if (!['modelSeries', 'modelVersion', 'modelTag', 'modelSize'].includes(key)) {
-                const element = document.getElementById(key);
-                if (element && savedConfig[key]) {
+                const elementId = fieldMapping[key] || key;
+                const element = document.getElementById(elementId);
+                if (element && savedConfig[key] !== undefined && savedConfig[key] !== null) {
                     element.value = savedConfig[key];
-                    console.log(`恢复导出字段 ${key}: ${savedConfig[key]}`);
+                    console.log(`恢复导出字段 ${key} -> ${elementId}: ${savedConfig[key]}`);
                 }
             }
         });
@@ -484,7 +492,8 @@ function showExportStarted(config) {
             <h3>导出配置:</h3>
             <pre>模型: ${config.model_info.series} ${config.model_info.version} ${config.model_info.tag} ${config.model_info.size}
 模型路径: ${config.model_path}
-导出格式: ${config.export_format}</pre>
+导出格式: ${config.export_format}
+图像尺寸: ${config.image_size}x${config.image_size}</pre>
         </div>
         <div class="status-item">
             <h3>导出日志:</h3>

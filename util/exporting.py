@@ -16,18 +16,22 @@ class ExportConfig:
     model_size: str
     model_path: str
     export_format: str
+    image_size: int = 640
 
     @classmethod
     def from_form(cls, form_data) -> 'ExportConfig':
         """从表单数据创建配置对象"""
         try:
+            image_size = int(form_data.get('imageSize', 640))
+            
             return cls(
                 model_series=form_data.get('modelSeries', ''),
                 model_version=form_data.get('modelVersion', ''),
                 model_tag=form_data.get('modelTag', ''),
                 model_size=form_data.get('modelSize', ''),
                 model_path=form_data.get('modelPath', ''),
-                export_format=form_data.get('exportFormat', '')
+                export_format=form_data.get('exportFormat', ''),
+                image_size=image_size
             )
         except (ValueError, TypeError) as e:
             raise ValueError(f"配置参数无效: {str(e)}")
@@ -45,6 +49,10 @@ class ExportConfig:
             
         if not self.export_format:
             raise ValueError("导出格式不能为空")
+        
+        # 验证图像尺寸
+        if self.image_size < 32 or self.image_size > 2048:
+            raise ValueError("图像尺寸必须在32-2048之间")
 
 
 class ExportProcess:
@@ -85,7 +93,7 @@ class ExportProcess:
                     "python3",
                     "export.py",
                     "--weights", config.model_path,
-                    "--img-size", "640",  
+                    "--img-size", str(config.image_size),  
                     "--batch-size", "1"   
                 ]
                 

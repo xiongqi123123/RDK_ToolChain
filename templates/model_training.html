@@ -77,7 +77,11 @@ dataset_root/
                 <input type="number" id="batchSize" name="batchSize" min="1" value="8" required>
                 <small class="help-text">建议值：GPU训练 8-32，CPU训练 2-8</small>
             </div>
-
+            <div class="form-group">
+                <label for="imageSize">图像输入尺寸</label>
+                <input type="number" id="imageSize" name="imageSize" min="32" max="2048" step="32" value="640" required>
+                <small class="help-text">训练时的图像输入尺寸（正方形），常用值：320、416、512、640、832、1024。</small>
+            </div>
             <div class="form-group">
                 <label for="numClasses">类别数量</label>
                 <input type="number" id="numClasses" name="numClasses" min="1" required>
@@ -89,6 +93,7 @@ dataset_root/
                 <textarea id="labels" name="labels" placeholder="每行输入一个标签名称" required></textarea>
                 <small class="help-text">每行输入一个标签名称，数量需要与类别数量相匹配</small>
             </div>
+
 
             <!-- 添加关键点配置 -->
             <div class="form-group" id="kptShapeGroup" style="display: none;">

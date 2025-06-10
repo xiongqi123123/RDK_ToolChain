@@ -56,6 +56,7 @@ def model_training():
                 'batch_size': config.batch_size,
                 'device': config.device,
                 'dataset_path': config.dataset_path,
+                'image_size': config.image_size,
                 'model_info': {
                     'series': config.model_series,
                     'version': config.model_version,
@@ -116,7 +117,8 @@ def model_export():
                     'size': config.model_size
                 },
                 'model_path': config.model_path,
-                'export_format': config.export_format
+                'export_format': config.export_format,
+                'image_size': config.image_size
             }
         })
         
