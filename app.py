@@ -7,6 +7,7 @@ from util.quantization import QuantizationConfig, checker_process
 from util.conversion import ConversionConfig, conversion_process
 from util.detection import DetectionConfig, detection_process
 from util.delete import DeleteConfig, delete_process
+from util.testing import TestingConfig, testing_process
 import threading
 import os
 from pathlib import Path
@@ -242,9 +243,60 @@ def model_conversion():
             'message': f'转换失败: {str(e)}'
         }), 500
 
-@app.route('/model_testing')
+@app.route('/model_testing', methods=['GET', 'POST'])
 def model_testing():
-    return render_template('model_testing.html')
+    """模型测试页面"""
+    if request.method == 'GET':
+        return render_template('model_testing.html')
+    try:
+        config = TestingConfig.from_form(request.form)
+        config.validate()
+        
+        def run_testing():
+            try:
+                testing_process.start(config)
+            except Exception as e:
+                print(f"测试过程出错: {str(e)}")
+                
+        testing_thread = threading.Thread(target=run_testing)
+        testing_thread.daemon = True  
+        testing_thread.start()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '测试已启动',
+            'config': {
+                'model_info': {
+                    'series': config.model_series,
+                    'version': config.model_version,
+                    'tag': config.model_tag
+                },
+                'model_path': config.model_path,
+                'image_path': config.image_path,
+                'num_classes': config.num_classes
+            }
+        })
+        
+    except FileNotFoundError as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'error_type': 'file_not_found'
+        }), 404
+        
+    except ValueError as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'error_type': 'validation_error'
+        }), 400
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'启动测试失败: {str(e)}',
+            'error_type': 'internal_error'
+        }), 500
 
 @app.route('/browse')
 def browse_files():
@@ -261,25 +313,6 @@ def browse_files():
         return jsonify(sorted(items, key=lambda x: (x['type'] == 'file', x['name'])))
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-@app.route('/start_testing', methods=['POST'])
-def start_testing():
-    data = request.get_json()
-    model_path = data.get('model_path')
-    image_path = data.get('image_path')
-    
-    if not model_path or not image_path:
-        return jsonify({'error': '请提供模型文件和测试图片路径'}), 400
-        
-    if not os.path.exists(model_path) or not os.path.exists(image_path):
-        return jsonify({'error': '文件不存在'}), 404
-        
-    # 这里先返回成功,实际的测试逻辑将在后端实现
-    return jsonify({'status': 'success'})
-
-@app.route('/stop_testing', methods=['POST'])
-def stop_testing():
-    return jsonify({'status': 'success'})
 
 @app.route('/model-detection', methods=['GET', 'POST'])
 def model_detection():
@@ -616,6 +649,32 @@ def download_logs():
             
     except Exception as e:
         return str(e), 500
+
+@app.route('/api/testing-status')
+def get_testing_status():
+    """获取测试状态"""
+    try:
+        return jsonify(testing_process.get_status())
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'获取测试状态失败: {str(e)}'
+        }), 500
+
+@app.route('/api/stop-testing', methods=['POST'])
+def api_stop_testing():
+    """停止测试"""
+    try:
+        testing_process.stop()
+        return jsonify({
+            'status': 'success',
+            'message': '测试已停止'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'停止测试失败: {str(e)}'
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True,port=5001)

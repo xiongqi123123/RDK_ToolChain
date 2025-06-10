@@ -117,10 +117,450 @@ const modelConfigs = {
     }
 };
 
+// 训练状态管理 - 添加状态持久化
+const trainingStatus = {
+    isTraining: false,
+    totalEpochs: 0,
+    currentEpoch: 0,
+    config: null,
+    logs: [],
+    
+    // 保存状态到localStorage
+    save: function() {
+        const stateData = {
+            isTraining: this.isTraining,
+            totalEpochs: this.totalEpochs,
+            currentEpoch: this.currentEpoch,
+            config: this.config,
+            logs: this.logs,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('trainingStatus', JSON.stringify(stateData));
+        console.log('训练状态已保存:', stateData);
+    },
+    
+    // 从localStorage恢复状态
+    load: function() {
+        try {
+            const savedData = localStorage.getItem('trainingStatus');
+            if (savedData) {
+                const stateData = JSON.parse(savedData);
+                // 检查数据是否过期（超过24小时）
+                if (Date.now() - stateData.timestamp < 24 * 60 * 60 * 1000) {
+                    this.isTraining = stateData.isTraining || false;
+                    this.totalEpochs = stateData.totalEpochs || 0;
+                    this.currentEpoch = stateData.currentEpoch || 0;
+                    this.config = stateData.config || null;
+                    this.logs = stateData.logs || [];
+                    console.log('训练状态已恢复:', stateData);
+                    return true;
+                } else {
+                    // 数据过期，清除
+                    this.clear();
+                }
+            }
+        } catch (error) {
+            console.error('恢复训练状态失败:', error);
+            this.clear();
+        }
+        return false;
+    },
+    
+    // 清除保存的状态
+    clear: function() {
+        localStorage.removeItem('trainingStatus');
+        this.isTraining = false;
+        this.totalEpochs = 0;
+        this.currentEpoch = 0;
+        this.config = null;
+        this.logs = [];
+        console.log('训练状态已清除');
+    },
+    
+    // 更新状态并保存
+    update: function(updates) {
+        Object.assign(this, updates);
+        this.save();
+    }
+};
+
+// 页面加载时恢复状态
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('页面加载完成，开始初始化...');
+    
+    // 先恢复保存的状态
+    const hasRestoredState = trainingStatus.load();
+    
+    // 初始化页面
+    initializePage();
+    
+    // 检查服务器状态并恢复UI
+    checkAndRestoreTrainingState();
+});
+
+// 初始化页面
+function initializePage() {
+    console.log('开始初始化页面...');
+    
+    // 设备检测
+    detectDevice();
+    
+    // 绑定模型选择事件
+    const modelSeriesSelect = document.getElementById('modelSeries');
+    if (modelSeriesSelect) {
+        console.log('绑定modelSeries事件');
+        modelSeriesSelect.onchange = function() {
+            console.log('modelSeries changed to:', this.value);
+            // 先重置后续字段，再更新当前字段的选项
+            resetFormFields(['modelTag', 'modelSize']);
+            updateVersionOptions(this.value);
+        };
+    } else {
+        console.error('找不到modelSeries元素');
+    }
+    
+    const modelVersionSelect = document.getElementById('modelVersion');
+    if (modelVersionSelect) {
+        console.log('绑定modelVersion事件');
+        modelVersionSelect.onchange = function() {
+            console.log('modelVersion changed to:', this.value);
+            const modelSeries = document.getElementById('modelSeries').value;
+            // 先重置后续字段，再更新当前字段的选项
+            resetFormFields(['modelSize']);
+            updateTagOptions(modelSeries, this.value);
+        };
+    } else {
+        console.error('找不到modelVersion元素');
+    }
+    
+    // 添加缺失的modelTag事件绑定
+    const modelTagSelect = document.getElementById('modelTag');
+    if (modelTagSelect) {
+        console.log('绑定modelTag事件');
+        modelTagSelect.onchange = function() {
+            console.log('modelTag changed to:', this.value);
+            const modelSeries = document.getElementById('modelSeries').value;
+            const selectedVersion = document.getElementById('modelVersion').value;
+            
+            // 处理关键点配置显示
+            const kptShapeGroup = document.getElementById('kptShapeGroup');
+            if (this.value === 'pose') {
+                kptShapeGroup.style.display = 'block';
+            } else {
+                kptShapeGroup.style.display = 'none';
+            }
+            
+            updateSizeOptions(modelSeries, selectedVersion, this.value);
+        };
+    } else {
+        console.error('找不到modelTag元素');
+    }
+    
+    // 绑定文件浏览器按钮事件
+    const browseBtn = document.querySelector('.browse-btn');
+    if (browseBtn) {
+        browseBtn.onclick = openFileBrowser;
+        console.log('绑定浏览按钮事件');
+    } else {
+        console.error('找不到浏览按钮');
+    }
+    
+    // 绑定表单提交事件
+    const trainingForm = document.getElementById('trainingForm');
+    if (trainingForm) {
+        trainingForm.onsubmit = handleFormSubmit;
+        console.log('绑定表单提交事件');
+    } else {
+        console.error('找不到trainingForm');
+    }
+    
+    console.log('页面初始化完成');
+}
+
+// 检查并恢复训练状态
+async function checkAndRestoreTrainingState() {
+    try {
+        console.log('检查服务器训练状态...');
+        const response = await fetch('/api/training-status');
+        
+        if (response.ok) {
+            const serverStatus = await response.json();
+            console.log('服务器状态:', serverStatus);
+            
+            // 如果服务器有任务在运行
+            if (serverStatus.status === 'running') {
+                console.log('检测到服务器有训练任务在运行，开始恢复状态...');
+                
+                // 恢复训练状态
+                trainingStatus.update({
+                    isTraining: true,
+                    totalEpochs: serverStatus.config?.epochs || trainingStatus.totalEpochs,
+                    currentEpoch: serverStatus.current_epoch || 0,
+                    config: serverStatus.config || trainingStatus.config
+                });
+                
+                // 恢复UI状态
+                restoreTrainingUI(serverStatus);
+                
+                // 开始轮询
+                setTimeout(pollTrainingStatus, 1000);
+                
+            } else if (serverStatus.status === 'stopped' || serverStatus.status === 'completed') {
+                // 如果任务已完成或停止，清除本地状态
+                console.log('服务器任务已结束，清除本地状态');
+                trainingStatus.clear();
+            }
+        } else {
+            console.log('无法获取服务器状态，可能没有任务在运行');
+            // 如果有本地保存的运行状态，但服务器没有任务，清除本地状态
+            if (trainingStatus.isTraining) {
+                console.log('本地状态与服务器不一致，清除本地状态');
+                trainingStatus.clear();
+            }
+        }
+    } catch (error) {
+        console.error('检查服务器状态失败:', error);
+        // 网络错误时，如果有本地状态，尝试恢复UI
+        if (trainingStatus.isTraining) {
+            console.log('网络错误，但尝试根据本地状态恢复UI');
+            restoreTrainingUIFromLocal();
+            setTimeout(pollTrainingStatus, 5000); // 5秒后重试轮询
+        }
+    }
+}
+
+// 根据服务器状态恢复UI
+function restoreTrainingUI(serverStatus) {
+    console.log('开始恢复训练UI...');
+    
+    // 恢复表单状态（禁用）
+    const form = document.getElementById('trainingForm');
+    const inputs = form.querySelectorAll('input, select, button, textarea');
+    inputs.forEach(input => {
+        if (input.type !== 'button' && !input.classList.contains('stop-btn')) {
+            input.disabled = true;
+        }
+    });
+    
+    // 显示训练状态区域
+    const trainingProgress = document.getElementById('trainingProgress');
+    const trainingControls = document.querySelector('.training-controls');
+    
+    // 创建状态显示元素
+    trainingProgress.innerHTML = `
+        <div class="status-item">
+            <h3>训练状态: <span class="status-badge running">正在运行</span></h3>
+            <p>当前轮次: ${serverStatus.current_epoch || 0}/${trainingStatus.totalEpochs}</p>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" style="width: 0%">0%</div>
+        </div>
+        <div class="status-item">
+            <h3>训练日志:</h3>
+            <div class="log-output"></div>
+        </div>
+    `;
+    
+    trainingControls.style.display = 'block';
+    
+    // 恢复日志内容
+    const logOutput = document.querySelector('.log-output');
+    if (trainingStatus.logs && trainingStatus.logs.length > 0) {
+        console.log('恢复保存的日志，共' + trainingStatus.logs.length + '条');
+        trainingStatus.logs.forEach(log => {
+            const logDiv = document.createElement('div');
+            logDiv.className = log.type;
+            logDiv.textContent = log.content;
+            logOutput.appendChild(logDiv);
+        });
+        logOutput.scrollTop = logOutput.scrollHeight;
+    }
+    
+    // 更新进度条
+    if (serverStatus.current_epoch && trainingStatus.totalEpochs) {
+        const progress = (serverStatus.current_epoch / trainingStatus.totalEpochs) * 100;
+        const progressBar = document.querySelector('.progress-bar');
+        progressBar.style.width = `${progress}%`;
+        progressBar.textContent = `${progress.toFixed(1)}%`;
+    }
+    
+    console.log('训练UI恢复完成');
+}
+
+// 根据本地状态恢复UI（网络错误时使用）
+function restoreTrainingUIFromLocal() {
+    if (!trainingStatus.isTraining) return;
+    
+    console.log('根据本地状态恢复UI...');
+    
+    const trainingProgress = document.getElementById('trainingProgress');
+    const trainingControls = document.querySelector('.training-controls');
+    
+    trainingProgress.innerHTML = `
+        <div class="status-item">
+            <h3>训练状态: <span class="status-badge running">尝试重连中...</span></h3>
+            <p>当前轮次: ${trainingStatus.currentEpoch}/${trainingStatus.totalEpochs}</p>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" style="width: 0%">重连中...</div>
+        </div>
+        <div class="status-item">
+            <h3>训练日志:</h3>
+            <div class="log-output"></div>
+        </div>
+    `;
+    
+    trainingControls.style.display = 'block';
+    
+    // 恢复日志
+    const logOutput = document.querySelector('.log-output');
+    if (trainingStatus.logs && trainingStatus.logs.length > 0) {
+        trainingStatus.logs.forEach(log => {
+            const logDiv = document.createElement('div');
+            logDiv.className = log.type;
+            logDiv.textContent = log.content;
+            logOutput.appendChild(logDiv);
+        });
+        logOutput.scrollTop = logOutput.scrollHeight;
+    }
+}
+
+// 重置表单字段
+function resetFormFields(fieldIds) {
+    console.log('重置字段:', fieldIds);
+    fieldIds.forEach(id => {
+        const field = document.getElementById(id);
+        if (field) {
+            if (field.tagName === 'SELECT') {
+                // 根据字段类型设置不同的默认文本
+                let defaultText = '请选择';
+                if (id === 'modelVersion') {
+                    defaultText = '请先选择模型系列';
+                } else if (id === 'modelTag') {
+                    defaultText = '请先选择模型版本';
+                } else if (id === 'modelSize') {
+                    defaultText = '请先选择模型Tag';
+                }
+                field.innerHTML = `<option value="">${defaultText}</option>`;
+                console.log(`重置${id}字段，设置默认文本: ${defaultText}`);
+            } else {
+                field.value = '';
+                console.log(`重置${id}字段值`);
+            }
+        } else {
+            console.warn(`找不到字段: ${id}`);
+        }
+    });
+}
+
+// 处理表单提交
+function handleFormSubmit(event) {
+    event.preventDefault();
+    
+    if (trainingStatus.isTraining) {
+        alert('已有训练任务在运行中');
+        return;
+    }
+    
+    const formData = new FormData(event.target);
+    const epochs = parseInt(formData.get('epochs'));
+    const config = Object.fromEntries(formData.entries());
+    
+    // 保存配置到状态
+    trainingStatus.update({
+        totalEpochs: epochs,
+        config: config,
+        logs: [] // 清空之前的日志
+    });
+    
+    submitTrainingForm(formData);
+}
+
+// 提交训练表单
+function submitTrainingForm(formData) {
+    console.log('提交训练表单...');
+    
+    fetch('/model-training', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log('训练启动成功');
+            
+            // 更新状态
+            trainingStatus.update({
+                isTraining: true,
+                totalEpochs: data.config.epochs,
+                currentEpoch: 0
+            });
+            
+            // 更新UI
+            showTrainingStarted(data.config);
+            
+            // 开始轮询状态
+            setTimeout(pollTrainingStatus, 2000);
+        } else {
+            alert('启动训练失败: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('提交训练失败:', error);
+        alert('提交训练失败: ' + error.message);
+    });
+}
+
+// 显示训练开始状态
+function showTrainingStarted(config) {
+    const form = document.getElementById('trainingForm');
+    const inputs = form.querySelectorAll('input, select, button, textarea');
+    inputs.forEach(input => {
+        if (input.type !== 'button' && !input.classList.contains('stop-btn')) {
+            input.disabled = true;
+        }
+    });
+
+    const trainingProgress = document.getElementById('trainingProgress');
+    const trainingControls = document.querySelector('.training-controls');
+    
+    trainingProgress.innerHTML = `
+        <div class="status-item">
+            <h3>训练状态: <span class="status-badge running">正在运行</span></h3>
+            <p>当前轮次: 0/${config.epochs}</p>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" style="width: 0%">0%</div>
+        </div>
+        <div class="status-item">
+            <h3>训练配置:</h3>
+            <pre>模型: ${config.model_info.series} ${config.model_info.version} ${config.model_info.tag} ${config.model_info.size}
+设备: ${config.device}
+轮次: ${config.epochs}
+批次大小: ${config.batch_size}
+数据集: ${config.dataset_path}</pre>
+        </div>
+        <div class="status-item">
+            <h3>训练日志:</h3>
+            <div class="log-output"></div>
+        </div>
+    `;
+    
+    trainingControls.style.display = 'block';
+}
+
 // 更新版本选项
 function updateVersionOptions(modelSeries) {
+    console.log('updateVersionOptions called with:', modelSeries);
+    
     const versionSelect = document.getElementById('modelVersion');
+    if (!versionSelect) {
+        console.error('找不到modelVersion选择框');
+        return;
+    }
+    
     const versions = modelConfigs[modelSeries]?.versions || [];
+    console.log('找到的版本:', versions);
     
     versionSelect.innerHTML = '<option value="">请选择版本</option>';
     versions.forEach(version => {
@@ -128,13 +568,15 @@ function updateVersionOptions(modelSeries) {
         option.value = version.value;
         option.textContent = version.label;
         versionSelect.appendChild(option);
+        console.log('添加版本选项:', version.label);
     });
+    
+    console.log('版本选项更新完成，总共添加了', versions.length, '个选项');
 }
 
 // 更新Tag选项
 function updateTagOptions(modelSeries, selectedVersion) {
     const tagSelect = document.getElementById('modelTag');
-    tagSelect.innerHTML = '<option value="">请先选择模型版本</option>';
     
     // 根据选中的version找到对应的配置
     const versionConfig = modelConfigs[modelSeries]?.versions.find(v => v.value === selectedVersion);
@@ -147,17 +589,15 @@ function updateTagOptions(modelSeries, selectedVersion) {
         option.textContent = tag.label;
         tagSelect.appendChild(option);
     });
-    tagSelect.onchange = function() {
-        const kptShapeGroup = document.getElementById('kptShapeGroup');
-        if (this.value === 'pose') {
-            kptShapeGroup.style.display = 'block';
-        } else {
-            kptShapeGroup.style.display = 'none';
-        }
-        updateSizeOptions(modelSeries, selectedVersion, this.value);
-    };
+    
     // 重置size选择
     document.getElementById('modelSize').innerHTML = '<option value="">请选择大小</option>';
+    
+    // 隐藏关键点配置
+    const kptShapeGroup = document.getElementById('kptShapeGroup');
+    if (kptShapeGroup) {
+        kptShapeGroup.style.display = 'none';
+    }
 }
 
 // 更新大小选项
@@ -198,135 +638,6 @@ async function detectDevice() {
     }
 }
 
-// 文件选择处理
-document.addEventListener('DOMContentLoaded', function() {
-    // 模型系列选择事件
-    const modelSeriesSelect = document.getElementById('modelSeries');
-    modelSeriesSelect.addEventListener('change', (e) => {
-        const selectedSeries = e.target.value;
-        updateVersionOptions(selectedSeries);
-        
-        // 重置version、tag和size选择
-        document.getElementById('modelVersion').value = '';
-        document.getElementById('modelTag').value = '';
-        document.getElementById('modelSize').value = '';
-    });
-
-    // 版本选择事件
-    document.getElementById('modelVersion').addEventListener('change', function() {
-        const modelSeries = document.getElementById('modelSeries').value;
-        updateTagOptions(modelSeries, this.value);
-    });
-
-    // Tag选择事件
-    document.getElementById('modelTag').addEventListener('change', function() {
-        const modelSeries = document.getElementById('modelSeries').value;
-        const selectedVersion = document.getElementById('modelVersion').value;
-        updateSizeOptions(modelSeries, selectedVersion, this.value);
-    });
-
-    // 浏览按钮点击事件 - 直接打开我们的自定义文件浏览器
-    const browseBtn = document.querySelector('.browse-btn');
-    browseBtn.addEventListener('click', () => {
-        // 直接打开我们的自定义文件浏览器
-        openFileBrowser();
-    });
-
-    // 表单提交处理
-    const trainingForm = document.getElementById('trainingForm');
-    trainingForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        // 显示加载状态
-        const submitBtn = trainingForm.querySelector('.submit-btn');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = '配置中...';
-        submitBtn.disabled = true;
-
-        try {
-            const formData = new FormData(trainingForm);
-            const response = await fetch(trainingForm.action, {
-                method: 'POST',
-                body: formData
-            });
-            
-            const result = await response.json();
-            
-            // 更新训练状态区域
-            updateTrainingStatus(result);
-            
-        } catch (error) {
-            console.error('提交失败:', error);
-            alert('提交失败，请重试');
-        } finally {
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
-        }
-    });
-
-    // 初始设备检测
-    detectDevice();
-});
-
-// 训练状态管理
-let trainingStatus = {
-    isTraining: false,
-    currentEpoch: 0,
-    totalEpochs: 0
-};
-
-// 更新训练状态显示
-function updateTrainingStatus(data) {
-    const trainingProgress = document.getElementById('trainingProgress');
-    const trainingControls = document.querySelector('.training-controls');
-    
-    if (data.status === 'success') {
-        trainingStatus.isTraining = true;
-        trainingStatus.totalEpochs = data.config.epochs;
-        
-        // 显示训练配置和状态
-        trainingProgress.innerHTML = `
-            <div class="status-item">
-                <h3>
-                    <span>训练状态</span>
-                    <span class="status-badge running">正在运行</span>
-                </h3>
-                <div class="progress-container">
-                    <div class="progress-bar" style="width: 0%">0%</div>
-                </div>
-                <p>当前轮次: 1/${data.config.epochs}</p>
-            </div>
-            <div class="status-item">
-                <h3>训练配置</h3>
-                <pre>${JSON.stringify(data.config, null, 2)}</pre>
-            </div>
-            <div class="status-item">
-                <h3>运行日志</h3>
-                <pre class="log-output"></pre>
-            </div>
-        `;
-        
-        // 显示停止按钮
-        trainingControls.style.display = 'flex';
-        
-        // 开始轮询训练状态
-        pollTrainingStatus();
-    } else {
-        // 显示错误信息
-        trainingProgress.innerHTML = `
-            <div class="status-item">
-                <h3>
-                    <span>错误</span>
-                    <span class="status-badge stopped">失败</span>
-                </h3>
-                <p class="error-message">${data.message}</p>
-                ${data.error ? `<pre class="error-details">${data.error}</pre>` : ''}
-            </div>
-        `;
-        trainingControls.style.display = 'none';
-    }
-}
-
 // 轮询训练状态
 function pollTrainingStatus() {
     if (!trainingStatus.isTraining) return;
@@ -345,8 +656,17 @@ function pollTrainingStatus() {
             if (data.status === 'running') {
                 // 更新状态标签
                 const statusBadge = document.querySelector('.status-badge');
-                statusBadge.className = 'status-badge running';
-                statusBadge.textContent = '正在运行';
+                if (statusBadge) {
+                    statusBadge.className = 'status-badge running';
+                    statusBadge.textContent = '正在运行';
+                }
+                
+                // 更新当前轮次到状态管理
+                if (data.current_epoch !== undefined) {
+                    trainingStatus.update({
+                        currentEpoch: data.current_epoch
+                    });
+                }
                 
                 // 更新进度条和轮次
                 const progressBar = document.querySelector('.progress-bar');
@@ -360,14 +680,20 @@ function pollTrainingStatus() {
                     const progress = ((data.current_epoch) / trainingStatus.totalEpochs) * 100;
                     console.log('计算的进度:', progress);  // 调试日志
                     
-                    progressBar.style.transition = 'width 0.5s ease-in-out';
-                    progressBar.style.width = `${progress}%`;
-                    progressBar.textContent = `${progress.toFixed(1)}%`;
-                    currentEpoch.textContent = `当前轮次: ${data.current_epoch}/${trainingStatus.totalEpochs}`;
+                    if (progressBar) {
+                        progressBar.style.transition = 'width 0.5s ease-in-out';
+                        progressBar.style.width = `${progress}%`;
+                        progressBar.textContent = `${progress.toFixed(1)}%`;
+                    }
+                    if (currentEpoch) {
+                        currentEpoch.textContent = `当前轮次: ${data.current_epoch}/${trainingStatus.totalEpochs}`;
+                    }
                 }
                 
-                // 更新日志
+                // 更新日志并保存到状态
                 const logOutput = document.querySelector('.log-output');
+                let hasNewLogs = false;
+                
                 if (data.stdout) {
                     const lines = data.stdout.split('\n');
                     lines.forEach(line => {
@@ -375,7 +701,17 @@ function pollTrainingStatus() {
                             const stdoutDiv = document.createElement('div');
                             stdoutDiv.className = 'stdout';
                             stdoutDiv.textContent = line;
-                            logOutput.appendChild(stdoutDiv);
+                            if (logOutput) {
+                                logOutput.appendChild(stdoutDiv);
+                            }
+                            
+                            // 保存到状态（限制日志数量避免内存过大）
+                            trainingStatus.logs.push({
+                                type: 'stdout',
+                                content: line,
+                                timestamp: Date.now()
+                            });
+                            hasNewLogs = true;
                         }
                     });
                 }
@@ -386,13 +722,35 @@ function pollTrainingStatus() {
                             const stderrDiv = document.createElement('div');
                             stderrDiv.className = 'stderr';
                             stderrDiv.textContent = line;
-                            logOutput.appendChild(stderrDiv);
+                            if (logOutput) {
+                                logOutput.appendChild(stderrDiv);
+                            }
+                            
+                            // 保存到状态
+                            trainingStatus.logs.push({
+                                type: 'stderr',
+                                content: line,
+                                timestamp: Date.now()
+                            });
+                            hasNewLogs = true;
                         }
                     });
                 }
                 
+                // 限制日志数量（保持最近1000条）
+                if (trainingStatus.logs.length > 1000) {
+                    trainingStatus.logs = trainingStatus.logs.slice(-800);
+                }
+                
+                // 如果有新日志，保存状态
+                if (hasNewLogs) {
+                    trainingStatus.save();
+                }
+                
                 // 自动滚动到底部
-                logOutput.scrollTop = logOutput.scrollHeight;
+                if (logOutput) {
+                    logOutput.scrollTop = logOutput.scrollHeight;
+                }
                 
                 // 继续轮询
                 setTimeout(pollTrainingStatus, 1000);
@@ -404,6 +762,14 @@ function pollTrainingStatus() {
         })
         .catch(error => {
             console.error('获取训练状态失败:', error);
+            
+            // 如果是网络错误，更新状态为重连中
+            const statusBadge = document.querySelector('.status-badge');
+            if (statusBadge && trainingStatus.isTraining) {
+                statusBadge.className = 'status-badge running';
+                statusBadge.textContent = '重连中...';
+            }
+            
             const retryTime = error.message.includes('404') ? 5000 : 1000;
             setTimeout(pollTrainingStatus, retryTime);
         });
@@ -414,12 +780,25 @@ function updateTrainingComplete(data) {
     const trainingProgress = document.getElementById('trainingProgress');
     const trainingControls = document.querySelector('.training-controls');
     
-    trainingStatus.isTraining = false;
-    trainingControls.style.display = 'none';
+    // 更新状态管理
+    trainingStatus.update({
+        isTraining: false
+    });
+    
+    if (trainingControls) {
+        trainingControls.style.display = 'none';
+    }
     
     const statusBadge = document.querySelector('.status-badge');
-    statusBadge.className = 'status-badge completed';
-    statusBadge.textContent = '已完成';
+    if (statusBadge) {
+        statusBadge.className = 'status-badge completed';
+        statusBadge.textContent = '已完成';
+    }
+    
+    // 重新启用表单
+    enableTrainingForm();
+    
+    console.log('训练已完成');
 }
 
 // 更新训练停止状态
@@ -427,12 +806,38 @@ function updateTrainingStopped(data) {
     const trainingProgress = document.getElementById('trainingProgress');
     const trainingControls = document.querySelector('.training-controls');
     
-    trainingStatus.isTraining = false;
-    trainingControls.style.display = 'none';
+    // 更新状态管理
+    trainingStatus.update({
+        isTraining: false
+    });
+    
+    if (trainingControls) {
+        trainingControls.style.display = 'none';
+    }
     
     const statusBadge = document.querySelector('.status-badge');
-    statusBadge.className = 'status-badge stopped';
-    statusBadge.textContent = '已停止';
+    if (statusBadge) {
+        statusBadge.className = 'status-badge stopped';
+        statusBadge.textContent = '已停止';
+    }
+    
+    // 重新启用表单
+    enableTrainingForm();
+    
+    console.log('训练已停止');
+}
+
+// 重新启用训练表单
+function enableTrainingForm() {
+    const form = document.getElementById('trainingForm');
+    if (form) {
+        const inputs = form.querySelectorAll('input, select, button, textarea');
+        inputs.forEach(input => {
+            if (input.type !== 'button' || input.classList.contains('submit-btn') || input.classList.contains('reset-btn')) {
+                input.disabled = false;
+            }
+        });
+    }
 }
 
 // 停止训练
@@ -440,6 +845,13 @@ function stopTraining() {
     if (!trainingStatus.isTraining) return;
     
     if (!confirm('确定要停止训练吗？')) return;
+    
+    // 更新状态为停止中
+    const statusBadge = document.querySelector('.status-badge');
+    if (statusBadge) {
+        statusBadge.className = 'status-badge running';
+        statusBadge.textContent = '停止中...';
+    }
     
     fetch('/api/stop-training', {
         method: 'POST',
@@ -458,11 +870,21 @@ function stopTraining() {
                 updateTrainingStopped(data);
             } else {
                 alert('停止训练失败: ' + data.message);
+                // 恢复状态
+                if (statusBadge) {
+                    statusBadge.className = 'status-badge running';
+                    statusBadge.textContent = '正在运行';
+                }
             }
         })
         .catch(error => {
             console.error('停止训练失败:', error);
             alert('停止训练失败，请重试\n' + error.message);
+            // 恢复状态
+            if (statusBadge) {
+                statusBadge.className = 'status-badge running';
+                statusBadge.textContent = '正在运行';
+            }
         });
 }
 

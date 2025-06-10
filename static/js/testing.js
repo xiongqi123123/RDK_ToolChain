@@ -308,16 +308,8 @@ function handleFileClick(item) {
 
 // 开始测试
 function startTesting() {
-    const modelPath = document.getElementById('modelPath').value;
-    const imagePath = document.getElementById('imagePath').value;
-    const modelSeries = document.getElementById('modelSeries').value;
-    const modelVersion = document.getElementById('modelVersion').value;
-    const modelTag = document.getElementById('modelTag').value;
-    
-    if (!modelPath || !imagePath || !modelSeries || !modelVersion || !modelTag) {
-        showError('请完成所有必填项');
-        return;
-    }
+    const form = document.getElementById('testingForm');
+    const formData = new FormData(form);
     
     // 显示测试控制按钮
     document.querySelector('.testing-controls').style.display = 'block';
@@ -325,25 +317,18 @@ function startTesting() {
     document.getElementById('testResult').style.display = 'none';
     
     // 发送测试请求
-    fetch('/start_testing', {
+    fetch('/model_testing', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            model_path: modelPath,
-            image_path: imagePath,
-            model_series: modelSeries,
-            model_version: modelVersion,
-            model_tag: modelTag
-        })
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
-        if (data.error) {
-            showError(data.error);
+        if (data.status === 'error') {
+            showError(data.message);
         } else {
             updateTestingProgress({ status: '测试已开始', progress: 0 });
+            // 开始定期检查状态
+            startStatusCheck();
         }
     })
     .catch(error => {
@@ -354,14 +339,15 @@ function startTesting() {
 
 // 停止测试
 function stopTesting() {
-    fetch('/stop_testing', { method: 'POST' })
+    fetch('/api/stop-testing', { method: 'POST' })
         .then(response => response.json())
         .then(data => {
-            if (data.error) {
-                showError(data.error);
+            if (data.status === 'error') {
+                showError(data.message);
             } else {
                 updateTestingProgress({ status: '测试已停止', progress: 0 });
                 document.querySelector('.testing-controls').style.display = 'none';
+                stopStatusCheck();
             }
         })
         .catch(error => {
@@ -370,32 +356,81 @@ function stopTesting() {
         });
 }
 
+let statusCheckInterval = null;
+
+// 开始定期检查状态
+function startStatusCheck() {
+    if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+    }
+    statusCheckInterval = setInterval(checkTestingStatus, 1000);
+}
+
+// 停止状态检查
+function stopStatusCheck() {
+    if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+        statusCheckInterval = null;
+    }
+}
+
+// 检查测试状态
+function checkTestingStatus() {
+    fetch('/api/testing-status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'error') {
+                showError(data.message);
+                stopStatusCheck();
+                return;
+            }
+            
+            updateTestingProgress(data);
+            
+            if (data.status === 'completed') {
+                stopStatusCheck();
+                showTestResult(data);
+            } else if (data.status === 'stopped') {
+                stopStatusCheck();
+                if (data.error) {
+                    showError(data.error);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error checking testing status:', error);
+            showError('获取测试状态失败');
+            stopStatusCheck();
+        });
+}
+
 // 更新测试进度
 function updateTestingProgress(data) {
     const progressDiv = document.getElementById('testingProgress');
     progressDiv.innerHTML = `
-        <div class="status-message">${data.status}</div>
-        ${data.progress ? `<div class="progress-bar">
+        <div class="status-message">${data.message}</div>
+        ${data.progress !== undefined ? `<div class="progress-bar">
             <div class="progress" style="width: ${data.progress}%"></div>
         </div>` : ''}
+        ${data.stdout ? `<div class="output-log">${data.stdout}</div>` : ''}
+        ${data.stderr ? `<div class="error-log">${data.stderr}</div>` : ''}
     `;
 }
 
-// 更新测试完成状态
-function updateTestingComplete(data) {
-    // 隐藏测试控制按钮
-    document.querySelector('.testing-controls').style.display = 'none';
-    
-    // 显示测试结果
+// 显示测试结果
+function showTestResult(data) {
     const resultDiv = document.getElementById('testResult');
     resultDiv.style.display = 'block';
     
-    // 更新图片
+    const resultContainer = document.getElementById('resultContainer');
+    resultContainer.style.display = 'block';
+    
+    // 更新图片显示
     if (data.original_image) {
         document.getElementById('originalImage').src = data.original_image;
     }
-    if (data.processed_image) {
-        document.getElementById('processedImage').src = data.processed_image;
+    if (data.result_image) {
+        document.getElementById('resultImage').src = data.result_image;
     }
     
     // 更新检测信息
