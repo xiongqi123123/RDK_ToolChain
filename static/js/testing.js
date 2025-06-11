@@ -126,18 +126,51 @@ let currentBrowserTarget = null;
 let currentPath = '/';
 let socket = null;
 
-// 页面状态管理器
-let pageStateManager = null;
-let pageRestorer = null;
+// 测试状态管理
+let testingStatus = {
+    isTesting: false,
+    status: 'stopped',
+    config: null,
+    logs: [],
+    
+    update: function(data) {
+        Object.assign(this, data);
+        this.save();
+    },
+    
+    save: function() {
+        localStorage.setItem('testing_status', JSON.stringify({
+            isTesting: this.isTesting,
+            status: this.status,
+            config: this.config,
+            logs: this.logs
+        }));
+    },
+    
+    load: function() {
+        const saved = localStorage.getItem('testing_status');
+        if (saved) {
+            const data = JSON.parse(saved);
+            Object.assign(this, data);
+        }
+    },
+    
+    clear: function() {
+        this.isTesting = false;
+        this.status = 'stopped';
+        this.config = null;
+        this.logs = [];
+        localStorage.removeItem('testing_status');
+    }
+};
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     console.log('页面加载完成，初始化测试页面');
     console.log('模型配置数据:', modelConfigs);
     
-    // 初始化状态管理器
-    pageStateManager = new PageStateManager('testing_page');
-    pageRestorer = new PageRestorer(pageStateManager, '/api/testing-status', '/api/stop-testing');
+    // 加载本地状态
+    testingStatus.load();
     
     // 初始化各个组件
     initializeModelSelectors();
@@ -148,8 +181,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 绑定表单事件
     bindFormEvents();
     
-    // 恢复页面状态
-    restorePageState();
+    // 检查并恢复测试状态
+    checkAndRestoreTestingState();
 });
 
 // 初始化模型选择器
@@ -337,18 +370,28 @@ function startTesting() {
     const form = document.getElementById('testingForm');
     const formData = new FormData(form);
     
-    // 保存表单状态
-    saveFormState();
+    // 保存测试配置
+    const testConfig = {
+        modelSeries: getValue('modelSeries'),
+        modelVersion: getValue('modelVersion'),
+        modelTag: getValue('modelTag'),
+        modelPath: getValue('modelPath'),
+        imagePath: getValue('imagePath'),
+        numClasses: getValue('numClasses'),
+        timestamp: Date.now()
+    };
+    
+    testingStatus.update({
+        isTesting: true,
+        status: 'running',
+        config: testConfig,
+        logs: []
+    });
     
     // 显示测试控制按钮
     document.querySelector('.testing-controls').style.display = 'block';
     // 隐藏之前的测试结果
     document.getElementById('testResult').style.display = 'none';
-    
-    // 清空之前的日志
-    if (pageStateManager) {
-        pageStateManager.update({ logs: [] });
-    }
     
     // 发送测试请求
     fetch('/model_testing', {
@@ -359,6 +402,7 @@ function startTesting() {
     .then(data => {
         if (data.status === 'error') {
             showError(data.message);
+            testingStatus.update({ isTesting: false, status: 'error' });
         } else {
             updateTestingProgress({ status: '测试已开始', progress: 0 });
             // 开始定期检查状态
@@ -368,6 +412,7 @@ function startTesting() {
     .catch(error => {
         console.error('Error starting testing:', error);
         showError('启动测试失败');
+        testingStatus.update({ isTesting: false, status: 'error' });
     });
 }
 
@@ -423,6 +468,13 @@ function checkTestingStatus() {
             
             if (data.status === 'completed') {
                 stopStatusCheck();
+                
+                // 更新本地状态为已完成
+                testingStatus.update({
+                    isTesting: false,
+                    status: 'completed'
+                });
+                
                 updateTestingProgress({
                     status: '测试已完成',
                     message: '测试完成，检测结果如下：',
@@ -431,6 +483,13 @@ function checkTestingStatus() {
                 showTestResult(data);
             } else if (data.status === 'stopped') {
                 stopStatusCheck();
+                
+                // 更新本地状态为已停止
+                testingStatus.update({
+                    isTesting: false,
+                    status: 'stopped'
+                });
+                
                 document.querySelector('.testing-controls').style.display = 'none';
                 if (data.error) {
                     showError(data.error);
@@ -461,23 +520,6 @@ function updateTestingProgress(data) {
         ${data.stdout ? `<div class="output-log">${data.stdout}</div>` : ''}
         ${data.stderr ? `<div class="error-log">${data.stderr}</div>` : ''}
     `;
-    
-    // 保存日志内容到状态管理器
-    if (pageStateManager && data.stdout) {
-        const state = pageStateManager.getState();
-        const logs = state.logs || [];
-        const newLogs = data.stdout.split('\n').filter(line => line.trim());
-        
-        // 转换为日志对象格式
-        const logObjects = newLogs.map(line => ({
-            type: 'info',
-            content: line,
-            timestamp: Date.now()
-        }));
-        
-        const allLogs = [...logs, ...logObjects].slice(-100); // 保持最近100行
-        pageStateManager.update({ logs: allLogs });
-    }
 }
 
 // 显示测试结果
@@ -521,22 +563,7 @@ function showError(message) {
     progressDiv.innerHTML = `<div class="error-message">${message}</div>`;
 }
 
-// 保存表单状态
-function saveFormState() {
-    if (!pageStateManager) return;
-    
-    const formState = {
-        modelSeries: getValue('modelSeries'),
-        modelVersion: getValue('modelVersion'),
-        modelTag: getValue('modelTag'),
-        modelPath: getValue('modelPath'),
-        imagePath: getValue('imagePath'),
-        numClasses: getValue('numClasses'),
-        timestamp: Date.now()
-    };
-    
-    pageStateManager.update({ formState: formState });
-}
+
 
 // 辅助函数：获取元素值
 function getValue(elementId) {
@@ -552,31 +579,439 @@ function setValue(elementId, value) {
     }
 }
 
+
+
+// 检查并恢复测试状态（与其他页面保持一致）
+async function checkAndRestoreTestingState() {
+    try {
+        console.log('检查服务器测试状态...');
+        
+        // 首先检查本地是否有已完成的任务状态（历史任务）
+        if (testingStatus.config && !testingStatus.isTesting && testingStatus.status === 'completed') {
+            console.log('发现已完成的测试任务状态，询问用户是否恢复');
+            const shouldRestoreCompleted = await askUserRestoreTesting();
+            if (shouldRestoreCompleted) {
+                restoreCompletedTestingUI();
+                return;
+            } else {
+                // 用户选择不恢复，清除旧状态
+                testingStatus.clear();
+            }
+        }
+        
+        const response = await fetch('/api/testing-status');
+        
+        if (response.ok) {
+            const serverStatus = await response.json();
+            console.log('服务器状态:', serverStatus);
+            
+            // 如果服务器有任务在运行，直接自动恢复
+            if (serverStatus.status === 'running') {
+                console.log('检测到服务器有测试任务在运行，开始恢复状态...');
+                
+                // 更新本地状态
+                testingStatus.update({
+                    isTesting: true,
+                    status: 'running',
+                    config: serverStatus.config || testingStatus.config
+                });
+                
+                restoreTestingUI(serverStatus);
+                restoreFormState();
+                startStatusCheck();
+                return;
+            } else if (serverStatus.status === 'stopped' || serverStatus.status === 'completed') {
+                console.log('服务器测试任务已结束');
+                
+                // 检查本地是否有相应的状态，如果有且是运行中状态，说明是刚完成的任务
+                if (testingStatus.isTesting) {
+                    console.log('更新本地状态为已完成');
+                    testingStatus.update({
+                        isTesting: false,
+                        status: serverStatus.status
+                    });
+                    
+                    // 如果是刚完成的任务，询问用户是否查看结果
+                    const shouldViewResult = await askUserViewTestingResult();
+                    if (shouldViewResult) {
+                        if (serverStatus.status === 'completed' && serverStatus.result_image) {
+                            showTestResult(serverStatus);
+                        } else {
+                            restoreCompletedTestingUI();
+                        }
+                        return;
+                    }
+                }
+            }
+        } else {
+            console.log('无法获取服务器状态，可能没有任务在运行');
+            // 如果有本地保存的运行状态，但服务器没有任务，清除本地状态
+            if (testingStatus.isTesting) {
+                console.log('本地状态与服务器不一致，清除本地状态');
+                testingStatus.clear();
+            }
+        }
+    } catch (error) {
+        console.error('检查服务器状态失败:', error);
+        
+        // 网络错误时，检查本地是否有完成的任务状态
+        if (testingStatus.config && !testingStatus.isTesting && testingStatus.status === 'completed') {
+            const shouldRestoreCompleted = await askUserRestoreTesting();
+            if (shouldRestoreCompleted) {
+                restoreCompletedTestingUI();
+                return;
+            }
+        }
+        
+        // 如果有本地状态，尝试恢复UI
+        if (testingStatus.isTesting) {
+            console.log('网络错误，但尝试根据本地状态恢复UI');
+            restoreTestingUIFromLocal();
+            setTimeout(() => checkAndRestoreTestingState(), 5000); // 5秒后重试
+        }
+    }
+}
+
+// 询问用户是否恢复历史测试任务
+async function askUserRestoreTesting() {
+    return new Promise((resolve) => {
+        const timeStr = new Date(testingStatus.config?.timestamp || Date.now()).toLocaleString();
+        let taskInfo = `任务时间: ${timeStr}`;
+        
+        if (testingStatus.config) {
+            taskInfo += `\n模型类型: ${testingStatus.config.modelSeries || '未知'}`;
+            taskInfo += `\n模型版本: ${testingStatus.config.modelVersion || '未知'}`;
+            taskInfo += `\n模型文件: ${testingStatus.config.modelPath || '未知'}`;
+            taskInfo += `\n测试图片: ${testingStatus.config.imagePath || '未知'}`;
+        }
+        
+        const modal = createRestoreTestingModal(taskInfo, resolve);
+        document.body.appendChild(modal);
+    });
+}
+
+// 询问用户是否查看测试结果
+async function askUserViewTestingResult() {
+    return new Promise((resolve) => {
+        const modal = createViewTestingResultModal(resolve);
+        document.body.appendChild(modal);
+    });
+}
+
+// 创建恢复历史测试任务模态框
+function createRestoreTestingModal(taskInfo, resolve) {
+    const modal = document.createElement('div');
+    modal.className = 'modal restore-modal';
+    modal.style.cssText = `
+        display: block;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    `;
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 400px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        ">
+            <h3 style="color: #333; margin-bottom: 15px;">发现之前的任务结果</h3>
+            <div style="
+                background-color: #f5f5f5;
+                padding: 15px;
+                border-radius: 4px;
+                margin: 15px 0;
+                text-align: left;
+                white-space: pre-line;
+                word-wrap: break-word;
+                word-break: break-all;
+                font-size: 14px;
+                color: #666;
+                max-height: 200px;
+                overflow-y: auto;
+            ">${taskInfo}</div>
+            <p style="color: #666; margin: 15px 0;">是否要查看之前的任务结果？</p>
+            <div style="margin-top: 20px;">
+                <button id="restoreTestYes" style="
+                    background-color: #ff8c00;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    margin: 0 10px;
+                    font-size: 14px;
+                ">查看结果</button>
+                <button id="restoreTestNo" style="
+                    background-color: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    margin: 0 10px;
+                    font-size: 14px;
+                ">开始新任务</button>
+            </div>
+        </div>
+    `;
+    
+    modal.querySelector('#restoreTestYes').onclick = () => {
+        document.body.removeChild(modal);
+        resolve(true);
+    };
+    
+    modal.querySelector('#restoreTestNo').onclick = () => {
+        document.body.removeChild(modal);
+        resolve(false);
+    };
+    
+    return modal;
+}
+
+// 创建查看测试结果模态框
+function createViewTestingResultModal(resolve) {
+    const modal = document.createElement('div');
+    modal.className = 'modal view-result-modal';
+    modal.style.cssText = `
+        display: block;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    `;
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 350px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        ">
+            <h3 style="color: #28a745; margin-bottom: 15px;">发现测试结果！</h3>
+            <p style="color: #666; margin: 15px 0;">检测到之前的测试已完成，是否要查看结果？</p>
+            <div style="margin-top: 20px;">
+                <button id="viewTestYes" style="
+                    background-color: #28a745;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    margin: 0 10px;
+                    font-size: 14px;
+                ">查看结果</button>
+                <button id="viewTestNo" style="
+                    background-color: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    margin: 0 10px;
+                    font-size: 14px;
+                ">开始新测试</button>
+            </div>
+        </div>
+    `;
+    
+    modal.querySelector('#viewTestYes').onclick = () => {
+        document.body.removeChild(modal);
+        resolve(true);
+    };
+    
+    modal.querySelector('#viewTestNo').onclick = () => {
+        document.body.removeChild(modal);
+        resolve(false);
+    };
+    
+    return modal;
+}
+
+// 根据服务器状态恢复测试UI
+function restoreTestingUI(serverStatus) {
+    console.log('开始恢复测试UI...');
+    
+    // 禁用表单
+    const form = document.getElementById('testingForm');
+    const inputs = form.querySelectorAll('input, select, button');
+    inputs.forEach(input => {
+        if (input.type !== 'button' && !input.classList.contains('stop-btn')) {
+            input.disabled = true;
+        }
+    });
+    
+    // 显示测试状态
+    const testingProgress = document.getElementById('testingProgress');
+    const testingControls = document.querySelector('.testing-controls');
+    
+    testingProgress.innerHTML = `
+        <div class="status-item">
+            <h3>测试状态: <span class="status-badge running">正在运行</span></h3>
+            <p>测试进度: ${serverStatus.progress || 0}%</p>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" style="width: ${serverStatus.progress || 0}%">${serverStatus.progress || 0}%</div>
+        </div>
+        <div class="status-item">
+            <h3>测试日志:</h3>
+            <div class="log-output">${serverStatus.stdout || '等待输出...'}</div>
+        </div>
+    `;
+    
+    testingControls.style.display = 'block';
+    
+    console.log('测试UI恢复完成');
+}
+
+// 根据本地状态恢复UI（网络错误时使用）
+function restoreTestingUIFromLocal() {
+    if (!testingStatus.isTesting) return;
+    
+    console.log('根据本地状态恢复UI...');
+    
+    const testingProgress = document.getElementById('testingProgress');
+    const testingControls = document.querySelector('.testing-controls');
+    
+    testingProgress.innerHTML = `
+        <div class="status-item">
+            <h3>测试状态: <span class="status-badge running">尝试重连中...</span></h3>
+            <p>正在尝试重新连接服务器...</p>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" style="width: 0%">重连中...</div>
+        </div>
+        <div class="status-item">
+            <h3>测试日志:</h3>
+            <div class="log-output"></div>
+        </div>
+    `;
+    
+    testingControls.style.display = 'block';
+    
+    // 恢复日志
+    const logOutput = document.querySelector('.log-output');
+    if (testingStatus.logs && testingStatus.logs.length > 0) {
+        testingStatus.logs.forEach(log => {
+            const logDiv = document.createElement('div');
+            logDiv.className = log.type || 'info';
+            logDiv.style.marginBottom = '4px';
+            logDiv.style.padding = '2px 0';
+            if (log.type === 'error') {
+                logDiv.style.color = '#dc3545';
+            } else if (log.type === 'warning') {
+                logDiv.style.color = '#fd7e14';
+            } else {
+                logDiv.style.color = '#495057';
+            }
+            logDiv.textContent = log.content;
+            logOutput.appendChild(logDiv);
+        });
+        logOutput.scrollTop = logOutput.scrollHeight;
+    } else {
+        logOutput.innerHTML = '<p style="color: #6c757d; font-style: italic; margin: 0;">暂无日志记录</p>';
+    }
+}
+
+// 恢复已完成的测试UI
+function restoreCompletedTestingUI() {
+    console.log('恢复已完成的测试任务UI...');
+    
+    // 1. 恢复表单状态
+    restoreFormState();
+    
+    // 2. 表单设为只读状态（已完成的任务）
+    const form = document.getElementById('testingForm');
+    const inputs = form.querySelectorAll('input, select, button');
+    inputs.forEach(input => {
+        if (input.type !== 'button' || input.textContent === '开始测试') {
+            input.disabled = true;
+        }
+    });
+    
+    // 3. 显示测试状态
+    const testingProgress = document.getElementById('testingProgress');
+    const testingControls = document.querySelector('.testing-controls');
+    const testResult = document.getElementById('testResult');
+    
+    testingProgress.innerHTML = `
+        <div class="status-item" style="margin-bottom: 20px;">
+            <h3>测试状态: <span class="status-badge completed" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 14px;">已完成</span></h3>
+            <p style="color: #666; margin: 10px 0;">测试完成时间: ${new Date(testingStatus.config?.timestamp || Date.now()).toLocaleString()}</p>
+        </div>
+        <div class="status-item" style="margin-bottom: 20px;">
+            <h3>测试配置:</h3>
+            <pre style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; border: 1px solid #ddd; font-size: 13px; line-height: 1.6;">模型: ${testingStatus.config?.modelSeries} ${testingStatus.config?.modelVersion} ${testingStatus.config?.modelTag}
+模型文件: ${testingStatus.config?.modelPath || '未知'}
+测试图片: ${testingStatus.config?.imagePath || '未知'}
+类别数量: ${testingStatus.config?.numClasses || '未知'}</pre>
+        </div>
+        <div class="status-item">
+            <h3>测试日志:</h3>
+            <div class="log-output" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 13px; line-height: 1.4;"></div>
+        </div>
+    `;
+    
+    // 隐藏控制按钮
+    testingControls.style.display = 'none';
+    
+    // 恢复日志
+    const logOutput = document.querySelector('.log-output');
+    if (testingStatus.logs && testingStatus.logs.length > 0) {
+        testingStatus.logs.forEach(log => {
+            const logDiv = document.createElement('div');
+            logDiv.className = log.type || 'info';
+            logDiv.textContent = log.content;
+            logOutput.appendChild(logDiv);
+        });
+        logOutput.scrollTop = logOutput.scrollHeight;
+    }
+    
+    // 3. 尝试加载和显示结果图片
+    loadTestResults();
+}
+
 // 恢复表单状态
-function restoreFormState(state) {
-    if (!state || !state.formState) return;
+function restoreFormState() {
+    if (!testingStatus.config) return;
     
-    const formState = state.formState;
+    console.log('恢复表单状态:', testingStatus.config);
     
-    // 恢复表单值
-    setValue('modelSeries', formState.modelSeries);
-    setValue('modelPath', formState.modelPath);
-    setValue('imagePath', formState.imagePath);
-    setValue('numClasses', formState.numClasses);
+    // 恢复基本字段
+    setValue('modelPath', testingStatus.config.modelPath);
+    setValue('imagePath', testingStatus.config.imagePath);
+    setValue('numClasses', testingStatus.config.numClasses);
     
-    // 更新下拉选项
-    if (formState.modelSeries) {
-        updateVersionOptions(formState.modelSeries);
+    // 恢复模型选择字段
+    if (testingStatus.config.modelSeries) {
+        setValue('modelSeries', testingStatus.config.modelSeries);
+        updateVersionOptions(testingStatus.config.modelSeries);
         
         // 延迟恢复版本和标签，确保选项已更新
         setTimeout(() => {
-            if (formState.modelVersion) {
-                setValue('modelVersion', formState.modelVersion);
-                updateTagOptions(formState.modelSeries, formState.modelVersion);
+            if (testingStatus.config.modelVersion) {
+                setValue('modelVersion', testingStatus.config.modelVersion);
+                updateTagOptions(testingStatus.config.modelSeries, testingStatus.config.modelVersion);
                 
                 setTimeout(() => {
-                    if (formState.modelTag) {
-                        setValue('modelTag', formState.modelTag);
+                    if (testingStatus.config.modelTag) {
+                        setValue('modelTag', testingStatus.config.modelTag);
                     }
                 }, 100);
             }
@@ -584,55 +1019,58 @@ function restoreFormState(state) {
     }
 }
 
-// 恢复页面状态
-async function restorePageState() {
-    // 加载本地状态
-    pageStateManager.load();
-    const state = pageStateManager.getState();
-    
-    // 恢复表单状态
-    restoreFormState(state);
-    
-    // 检查服务器状态并恢复进度
+// 加载测试结果
+async function loadTestResults() {
     try {
-        const restoreResult = await pageRestorer.checkAndRestore();
+        console.log('尝试加载测试结果...');
         
-        if (restoreResult.shouldRestore && restoreResult.serverStatus) {
-            const serverState = restoreResult.serverStatus;
-            
-            // 显示控制按钮
-            const controlsElement = document.querySelector('.testing-controls');
-            if (controlsElement) {
-                controlsElement.style.display = 'block';
+        // 首先检查服务器是否有结果
+        const response = await fetch('/api/testing-status');
+        if (response.ok) {
+            const serverStatus = await response.json();
+            if (serverStatus.status === 'completed' && serverStatus.result_image) {
+                console.log('从服务器加载测试结果');
+                showTestResult(serverStatus);
+                return;
+            }
+        }
+        
+        // 如果服务器没有结果，尝试显示默认的结果区域
+        const testResult = document.getElementById('testResult');
+        const resultContainer = document.getElementById('resultContainer');
+        
+        testResult.style.display = 'block';
+        resultContainer.style.display = 'block';
+        
+        // 设置默认图片路径（如果存在）
+        if (testingStatus.config) {
+            // 尝试显示原始图片
+            const originalImg = document.getElementById('originalImage');
+            if (testingStatus.config.imagePath) {
+                originalImg.src = `/original-image?path=${encodeURIComponent(testingStatus.config.imagePath)}`;
+                console.log('设置原始图片路径:', originalImg.src);
             }
             
-            // 开始状态检查
-            startStatusCheck();
+            // 尝试显示结果图片（使用默认路径）
+            const resultImg = document.getElementById('resultImage');
+            resultImg.src = '/test-result-image/result.jpg';
             
-            // 恢复日志内容
-            const currentState = pageStateManager.getState();
-            const logs = currentState.logs || [];
-            updateTestingProgress({
-                status: serverState.status,
-                message: serverState.message || '测试进行中',
-                stdout: logs.map(log => log.content).join('\n'),
-                progress: serverState.progress || 0
-            });
+            // 如果图片加载失败，隐藏图片容器
+            resultImg.onerror = function() {
+                console.log('结果图片加载失败，可能需要重新测试');
+                resultContainer.style.display = 'none';
+            };
         }
+        
+        console.log('测试结果区域已显示');
+        
     } catch (error) {
-        console.error('恢复页面状态失败:', error);
+        console.error('加载测试结果失败:', error);
     }
 }
 
-// 绑定表单事件以保存状态
+// 绑定表单事件（不再自动保存状态，与其他页面保持一致）
 function bindFormEvents() {
-    const formElements = ['modelSeries', 'modelVersion', 'modelTag', 'modelPath', 'imagePath', 'numClasses'];
-    
-    formElements.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.addEventListener('change', saveFormState);
-            element.addEventListener('input', saveFormState);
-        }
-    });
+    // 这里可以添加其他表单事件处理逻辑
+    console.log('表单事件绑定完成');
 }

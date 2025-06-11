@@ -78,13 +78,17 @@
             <h3>测试结果</h3>
             <div id="resultContainer" style="display: none; margin-top: 20px;">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-6" style="padding: 10px;">
                         <h4>原始图片</h4>
-                        <img id="originalImage" class="img-fluid" alt="原始图片">
+                        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; background-color: #f9f9f9;">
+                            <img id="originalImage" alt="原始图片" style="max-width: 100%; max-height: 400px; width: auto; height: auto; display: block; margin: 0 auto; object-fit: contain;">
+                        </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-6" style="padding: 10px;">
                         <h4>检测结果</h4>
-                        <img id="resultImage" class="img-fluid" alt="检测结果">
+                        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; background-color: #f9f9f9;">
+                            <img id="resultImage" alt="检测结果" style="max-width: 100%; max-height: 400px; width: auto; height: auto; display: block; margin: 0 auto; object-fit: contain;">
+                        </div>
                     </div>
                 </div>
                 <div id="resultInfo" class="mt-3"></div>
