@@ -289,7 +289,48 @@ function openImageBrowser() {
 function openFileBrowser() {
     document.getElementById('fileBrowserModal').style.display = 'block';
     document.getElementById('currentPath').textContent = currentPath;
+    
+    // 添加文件类型过滤提示
+    addFileFilterTip();
+    
     loadFileList(currentPath);
+}
+
+// 添加文件类型过滤提示
+function addFileFilterTip() {
+    // 移除现有的提示（如果存在）
+    const existingTip = document.getElementById('fileFilterTip');
+    if (existingTip) {
+        existingTip.remove();
+    }
+    
+    // 创建新的提示
+    const tip = document.createElement('div');
+    tip.id = 'fileFilterTip';
+    tip.style.cssText = `
+        background-color: #e7f3ff;
+        border: 1px solid #b3d7ff;
+        border-radius: 4px;
+        padding: 8px 12px;
+        margin-bottom: 15px;
+        font-size: 13px;
+        color: #0056b3;
+    `;
+    
+    let tipText = '';
+    if (currentBrowserTarget === 'model') {
+        tipText = '📁 仅显示 .onnx 格式的模型文件和文件夹';
+    } else if (currentBrowserTarget === 'image') {
+        tipText = '🖼️ 仅显示 .jpg/.png 格式的图片文件和文件夹';
+    } else {
+        tipText = '📂 显示所有文件和文件夹';
+    }
+    
+    tip.textContent = tipText;
+    
+    // 插入到文件列表之前
+    const fileList = document.getElementById('fileList');
+    fileList.parentNode.insertBefore(tip, fileList);
 }
 
 // 关闭文件浏览器
@@ -306,6 +347,7 @@ function navigateUp() {
     currentPath = parts.join('/') || '/';
     
     document.getElementById('currentPath').textContent = currentPath;
+    addFileFilterTip(); // 更新提示
     loadFileList(currentPath);
 }
 
@@ -317,15 +359,113 @@ function loadFileList(path) {
             const fileList = document.getElementById('fileList');
             fileList.innerHTML = '';
             
-            data.forEach(item => {
+            // 过滤文件
+            const filteredData = data.filter(item => {
+                // 总是显示目录
+                if (item.type === 'directory') {
+                    return true;
+                }
+                
+                // 根据当前浏览器目标过滤文件
+                if (currentBrowserTarget === 'model') {
+                    return item.name.toLowerCase().endsWith('.onnx');
+                } else if (currentBrowserTarget === 'image') {
+                    return item.name.match(/\.(jpg|jpeg|png)$/i);
+                }
+                
+                // 默认显示所有文件
+                return true;
+            });
+            
+            // 如果没有匹配的文件，显示提示
+            if (filteredData.length === 0) {
+                const noFiles = document.createElement('div');
+                noFiles.className = 'no-files-message';
+                noFiles.style.cssText = `
+                    text-align: center;
+                    color: #6c757d;
+                    font-style: italic;
+                    padding: 40px 20px;
+                    border: 2px dashed #dee2e6;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                `;
+                
+                if (currentBrowserTarget === 'model') {
+                    noFiles.textContent = '当前目录下没有找到 .onnx 模型文件';
+                } else if (currentBrowserTarget === 'image') {
+                    noFiles.textContent = '当前目录下没有找到 .jpg/.png 图片文件';
+                } else {
+                    noFiles.textContent = '当前目录为空';
+                }
+                
+                fileList.appendChild(noFiles);
+                return;
+            }
+            
+            filteredData.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'file-item';
+                div.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    padding: 10px 15px;
+                    border-bottom: 1px solid #dee2e6;
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                `;
+                
+                // 悬停效果
+                div.onmouseenter = () => {
+                    div.style.backgroundColor = '#f8f9fa';
+                };
+                div.onmouseleave = () => {
+                    div.style.backgroundColor = '';
+                };
                 
                 const icon = document.createElement('i');
                 icon.className = item.type === 'directory' ? 'fas fa-folder' : 'fas fa-file';
+                icon.style.cssText = `
+                    margin-right: 10px;
+                    color: ${item.type === 'directory' ? '#ffc107' : '#6c757d'};
+                    width: 16px;
+                `;
                 
                 const name = document.createElement('span');
                 name.textContent = item.name;
+                name.style.cssText = `
+                    flex: 1;
+                    word-break: break-all;
+                `;
+                
+                // 为支持的文件类型添加标识
+                if (item.type === 'file') {
+                    const badge = document.createElement('span');
+                    badge.style.cssText = `
+                        font-size: 12px;
+                        padding: 2px 6px;
+                        border-radius: 3px;
+                        margin-left: 10px;
+                    `;
+                    
+                    if (item.name.toLowerCase().endsWith('.onnx')) {
+                        badge.textContent = 'ONNX';
+                        badge.style.backgroundColor = '#e3f2fd';
+                        badge.style.color = '#1976d2';
+                    } else if (item.name.match(/\.(jpg|jpeg)$/i)) {
+                        badge.textContent = 'JPG';
+                        badge.style.backgroundColor = '#e8f5e8';
+                        badge.style.color = '#388e3c';
+                    } else if (item.name.match(/\.png$/i)) {
+                        badge.textContent = 'PNG';
+                        badge.style.backgroundColor = '#e8f5e8';
+                        badge.style.color = '#388e3c';
+                    }
+                    
+                    if (badge.textContent) {
+                        name.appendChild(badge);
+                    }
+                }
                 
                 div.appendChild(icon);
                 div.appendChild(name);
@@ -346,6 +486,7 @@ function handleFileClick(item) {
     if (item.type === 'directory') {
         currentPath = item.path;
         document.getElementById('currentPath').textContent = currentPath;
+        addFileFilterTip(); // 更新提示
         loadFileList(currentPath);
     } else {
         // 检查文件类型
