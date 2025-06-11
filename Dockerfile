@@ -1,5 +1,5 @@
 # 使用支持 CUDNN 8 的 CUDA 基础镜像
-FROM nvcr.io/nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+FROM registry.d-robotics.cc/public/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
 # 设置环境变量
 ENV PYTHONDONTWRITEBYTECODE=1 \

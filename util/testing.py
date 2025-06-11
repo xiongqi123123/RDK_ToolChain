@@ -74,32 +74,46 @@ class TestingProcess:
             if self.process and self.process.poll() is None:
                 raise RuntimeError("已有测试进程在运行")
 
+            # 保存配置信息
+            self.config = config
+            
             try:
                 base_dir = Path(__file__).parent.parent.absolute()
+                test_dir = base_dir / "models" / "model_test" / "YOLO"
+                
                 if config.model_version == 'yolov5':
-                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}_{config.model_tag}"
-                    test_script = base_path / "yolov5v2.0_HBONNX.py"
+                    if config.model_tag == 'v2.0':
+                        test_script = test_dir / "yolov5v2.0_HBONNX.py"
+                    elif config.model_tag == 'v7.0':
+                        test_script = test_dir / "yolov5v7.0_HBONNX.py"
+                    else:
+                        raise ValueError(f"不支持的YOLOv5标签: {config.model_tag}")
                 elif config.model_version == 'yolov8':
-                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
-                    test_script = base_path / "yolov8_HBONNX.py"
+                    test_script = test_dir / "yolov8_det_HBONNX.py"
                 elif config.model_version == 'yolov10':
-                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
-                    test_script = base_path / "yolov10_HBONNX.py"
+                    test_script = test_dir / "yolov10_det_HBONNX.py"
                 elif config.model_version == 'yolo11':
-                    base_path = base_dir / "models" / "model_train" / "YOLO" / f"{config.model_version}"
-                    test_script = base_path / "yolo11_HBONNX.py"
+                    test_script = test_dir / "yolo11_det_HBONNX.py"
+                else:
+                    raise ValueError(f"不支持的模型版本: {config.model_version}")
 
                 if not test_script.exists():
                     raise FileNotFoundError(f"测试脚本不存在: {test_script}")
 
-                os.chdir(base_path)
+                os.chdir(test_dir)
 
+                # 创建输出目录
+                logs_dir = base_dir / "logs" / "test_output"
+                logs_dir.mkdir(parents=True, exist_ok=True)
+                output_path = logs_dir / "result.jpg"
+                
                 test_cmd = [
                     "python3",
                     str(test_script),
-                    "--model", config.model_path,
-                    "--image", config.image_path,
-                    "--num-classes", str(config.num_classes)
+                    "--model_path", config.model_path,
+                    "--img_path", config.image_path,
+                    "--class_num", str(config.num_classes),
+                    "--img_save_path", str(output_path)
                 ]
                 
                 print(f"开始测试: {' '.join(test_cmd)}")
@@ -111,7 +125,7 @@ class TestingProcess:
                     universal_newlines=True,
                     bufsize=1,  # 行缓冲
                     env=dict(os.environ, PYTHONUNBUFFERED="1"), 
-                    cwd=base_path
+                    cwd=str(test_dir)
                 )
 
                 for pipe in [self.process.stdout, self.process.stderr]:
@@ -221,10 +235,16 @@ class TestingProcess:
 
             if return_code is not None:
                 if return_code == 0:
+                    # 构建日志输出目录路径
+                    base_dir = Path(__file__).parent.parent.absolute()
+                    logs_dir = base_dir / "logs" / "test_output"
+                    
                     result.update({
                         'status': 'completed',
                         'message': '测试已完成',
-                        'progress': 100
+                        'progress': 100,
+                        'result_image': f"/test-result-image/result.jpg",
+                        'original_image': f"/original-image?path={self.config.image_path}" if hasattr(self, 'config') else None
                     })
                 else:
                     error_msg = stderr_data if stderr_data else f'测试异常终止，返回码：{return_code}'

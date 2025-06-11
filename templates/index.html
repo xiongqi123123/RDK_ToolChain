@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RDK模型一站式开发工具</title>
-    <link rel="icon" type="image/png" href="https://developer.d-robotics.cc/static/favicon.png" onerror="this.href='{{ url_for('static', filename='img/D_Robotics.png') }}'">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/D_Robotics.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
@@ -26,7 +26,7 @@
                 <li><a href="{{ url_for('model_conversion') }}">模型转换</a></li>
                 <li><a href="{{ url_for('model_delete') }}">模型摘除</a></li>
                 <li><a href="{{ url_for('model_detection') }}">模型检测</a></li>
-                <!-- <li><a href="{{ url_for('model_testing') }}">模型测试</a></li> -->
+                <li><a href="{{ url_for('model_testing') }}">模型测试</a></li>
                 <li><a href="{{ url_for('development_tools') }}">开发工具</a></li>
             </ul>
         </nav>
@@ -49,18 +49,35 @@
                 <div class="welcome-description">
                     <p class="intro-text">
                         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个工具预计将实现ModelZoo中全系列模型从训练到转换的全流程可视化操作，目前支持所有模型的量化转换操作，
-                        训练与导出目前已经完成ModelZoo中YOLO全系列的实现，后续将陆续适配ResNet系列模型，FCOS等模型,欢迎大家使用，
+                        训练与导出目前已经完成YOLO、分类全系列的实现，后续将陆续适配其他类型的模型，欢迎大家使用，
                         并提出宝贵的意见和建议！！！
                     </p>
                     <p class="intro-text">
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PS：前端太难了qaq，界面丑陋请多包含！！！
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tips：本工具配合ModelZoo的说明使用更佳！！！
+                    </p>
+                    <p class="intro-text">
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PS：前端太难了qaq，虽然V2修复了部分丑陋的界面，但是交互...等下一版叭！！！
                     </p>
                     <div class="features">
-                        <h2>V1.0版本特性：</h2>
-                        <ul>
+                        <h2 class="collapsible-header" onclick="toggleFeatureList('v1-features')">
+                            <i class="fas fa-chevron-right" id="v1-features-icon"></i> V1.0版本特性：
+                        </h2>
+                        <ul id="v1-features" class="feature-list collapsed">
                             <li><i class="fas fa-check"></i> 已支持所有模型的量化转换操作</li>
                             <li><i class="fas fa-check"></i> 已完成ModelZoo中YOLO全系列的训练与导出实现</li>
-                            <li><i class="fas fa-clock"></i> 即将支持ResNet系列模型、FCOS等模型</li>
+                            <li><i class="fas fa-check"></i> 已支持ResNet系列模型等其他模型的量化转换操作</li>
+                        </ul>
+                        <h2 class="collapsible-header" onclick="toggleFeatureList('v2-features')">
+                            <i class="fas fa-chevron-right" id="v2-features-icon"></i> V2.0版本特性：
+                        </h2>
+                        <ul id="v2-features" class="feature-list collapsed">
+                            <li><i class="fas fa-check"></i> 已支持常见分类模型的量化转换操作</li>
+                            <li><i class="fas fa-check"></i> 增加网页保持状态功能，切换页面不用担心状态丢失啦！</li>
+                            <li><i class="fas fa-check"></i> 修复了部分BUG，优化了部分功能，也优化了部分丑陋的界面</li>
+                            <li><i class="fas fa-clock"></i> 即将支持模型测试功能，敬请期待！</li>
+                            <li><i class="fas fa-clock"></i> 即将支持其他更加常见的模型，敬请期待！</li>
+                            <li><i class="fas fa-clock"></i> 即将支持开发板管理功能及模型部署功能，敬请期待！</li>
+                            
                         </ul>
                         <br><br>
                         <h2 style="display: inline;">项目开源地址：</h2><a href="https://github.com/xiongqi123123/RDK_ToolChain.git">https://github.com/xiongqi123123/RDK_ToolChain.git</a>
@@ -112,6 +129,21 @@
             }
         } catch (error) {
             alert('下载出错: ' + error.message);
+        }
+    }
+
+    function toggleFeatureList(listId) {
+        const list = document.getElementById(listId);
+        const icon = document.getElementById(listId + '-icon');
+        
+        if (list.classList.contains('collapsed')) {
+            list.classList.remove('collapsed');
+            icon.classList.remove('fa-chevron-right');
+            icon.classList.add('fa-chevron-down');
+        } else {
+            list.classList.add('collapsed');
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-right');
         }
     }
     </script>

@@ -113,3 +113,41 @@
 .contact-info a:hover {
     text-decoration: underline;
 }
+
+/* 折叠功能样式 */
+.collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.collapsible-header:hover {
+    color: #0056b3 !important;
+}
+
+.collapsible-header i {
+    transition: transform 0.3s ease;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+.feature-list {
+    transition: all 0.3s ease;
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.feature-list.collapsed {
+    max-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    opacity: 0;
+}
+
+.feature-list:not(.collapsed) {
+    max-height: 500px;
+    opacity: 1;
+}

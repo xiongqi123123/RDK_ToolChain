@@ -126,16 +126,30 @@ let currentBrowserTarget = null;
 let currentPath = '/';
 let socket = null;
 
+// 页面状态管理器
+let pageStateManager = null;
+let pageRestorer = null;
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     console.log('页面加载完成，初始化测试页面');
     console.log('模型配置数据:', modelConfigs);
+    
+    // 初始化状态管理器
+    pageStateManager = new PageStateManager('testing_page');
+    pageRestorer = new PageRestorer(pageStateManager, '/api/testing-status', '/api/stop-testing');
     
     // 初始化各个组件
     initializeModelSelectors();
     initializeWebSocket();
     initializeFileBrowser();
     initializeForm();
+    
+    // 绑定表单事件
+    bindFormEvents();
+    
+    // 恢复页面状态
+    restorePageState();
 });
 
 // 初始化模型选择器
@@ -149,11 +163,26 @@ function initializeModelSelectors() {
         modelSeriesSelect.addEventListener('change', function() {
             const selectedSeries = this.value;
             console.log('选择的模型系列:', selectedSeries);
-            updateVersionOptions(selectedSeries);
+            
+            if (selectedSeries) {
+                updateVersionOptions(selectedSeries);
+            }
             
             // 重置version和tag选择
-            document.getElementById('modelVersion').value = '';
-            document.getElementById('modelTag').value = '';
+            const versionSelect = document.getElementById('modelVersion');
+            const tagSelect = document.getElementById('modelTag');
+            
+            if (versionSelect) {
+                versionSelect.value = '';
+                if (!selectedSeries) {
+                    versionSelect.innerHTML = '<option value="">请先选择模型系列</option>';
+                }
+            }
+            
+            if (tagSelect) {
+                tagSelect.value = '';
+                tagSelect.innerHTML = '<option value="">请先选择模型版本</option>';
+            }
         });
     } else {
         console.error('未找到模型系列选择框');
@@ -166,7 +195,15 @@ function initializeModelSelectors() {
         modelVersionSelect.addEventListener('change', function() {
             const modelSeries = document.getElementById('modelSeries').value;
             console.log('选择的模型版本:', this.value);
-            updateTagOptions(modelSeries, this.value);
+            if (modelSeries && this.value) {
+                updateTagOptions(modelSeries, this.value);
+            }
+            
+            // 重置Tag选择
+            const tagSelect = document.getElementById('modelTag');
+            if (tagSelect && !this.value) {
+                tagSelect.innerHTML = '<option value="">请先选择模型版本</option>';
+            }
         });
     } else {
         console.error('未找到模型版本选择框');
@@ -174,19 +211,8 @@ function initializeModelSelectors() {
 }
 
 function initializeWebSocket() {
-    socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
-    
-    socket.on('testing_progress', function(data) {
-        updateTestingProgress(data);
-    });
-    
-    socket.on('testing_complete', function(data) {
-        updateTestingComplete(data);
-    });
-    
-    socket.on('testing_error', function(data) {
-        showError(data.error);
-    });
+    // Socket.IO 已被轮询方式替代，此函数保留为空
+    console.log('WebSocket 初始化跳过，使用轮询方式');
 }
 
 function initializeFileBrowser() {
@@ -311,10 +337,18 @@ function startTesting() {
     const form = document.getElementById('testingForm');
     const formData = new FormData(form);
     
+    // 保存表单状态
+    saveFormState();
+    
     // 显示测试控制按钮
     document.querySelector('.testing-controls').style.display = 'block';
     // 隐藏之前的测试结果
     document.getElementById('testResult').style.display = 'none';
+    
+    // 清空之前的日志
+    if (pageStateManager) {
+        pageStateManager.update({ logs: [] });
+    }
     
     // 发送测试请求
     fetch('/model_testing', {
@@ -389,11 +423,23 @@ function checkTestingStatus() {
             
             if (data.status === 'completed') {
                 stopStatusCheck();
+                updateTestingProgress({
+                    status: '测试已完成',
+                    message: '测试完成，检测结果如下：',
+                    progress: 100
+                });
                 showTestResult(data);
             } else if (data.status === 'stopped') {
                 stopStatusCheck();
+                document.querySelector('.testing-controls').style.display = 'none';
                 if (data.error) {
                     showError(data.error);
+                } else {
+                    updateTestingProgress({
+                        status: '测试已停止',
+                        message: '测试已手动停止',
+                        progress: 0
+                    });
                 }
             }
         })
@@ -415,10 +461,29 @@ function updateTestingProgress(data) {
         ${data.stdout ? `<div class="output-log">${data.stdout}</div>` : ''}
         ${data.stderr ? `<div class="error-log">${data.stderr}</div>` : ''}
     `;
+    
+    // 保存日志内容到状态管理器
+    if (pageStateManager && data.stdout) {
+        const state = pageStateManager.getState();
+        const logs = state.logs || [];
+        const newLogs = data.stdout.split('\n').filter(line => line.trim());
+        
+        // 转换为日志对象格式
+        const logObjects = newLogs.map(line => ({
+            type: 'info',
+            content: line,
+            timestamp: Date.now()
+        }));
+        
+        const allLogs = [...logs, ...logObjects].slice(-100); // 保持最近100行
+        pageStateManager.update({ logs: allLogs });
+    }
 }
 
 // 显示测试结果
 function showTestResult(data) {
+    console.log('显示测试结果:', data);
+    
     const resultDiv = document.getElementById('testResult');
     resultDiv.style.display = 'block';
     
@@ -427,20 +492,147 @@ function showTestResult(data) {
     
     // 更新图片显示
     if (data.original_image) {
-        document.getElementById('originalImage').src = data.original_image;
+        const originalImg = document.getElementById('originalImage');
+        originalImg.src = data.original_image;
+        console.log('设置原始图片路径:', originalImg.src);
     }
+    
     if (data.result_image) {
-        document.getElementById('resultImage').src = data.result_image;
+        const resultImg = document.getElementById('resultImage');
+        resultImg.src = data.result_image;
+        console.log('设置结果图片路径:', resultImg.src);
     }
     
     // 更新检测信息
-    if (data.detection_info) {
-        document.getElementById('detectionInfo').innerHTML = data.detection_info;
+    const detectionInfo = document.getElementById('detectionInfo');
+    if (data.stdout) {
+        detectionInfo.innerHTML = `<pre>${data.stdout}</pre>`;
+    } else if (data.detection_info) {
+        detectionInfo.innerHTML = data.detection_info;
     }
+    
+    // 隐藏控制按钮
+    document.querySelector('.testing-controls').style.display = 'none';
 }
 
 // 显示错误信息
 function showError(message) {
     const progressDiv = document.getElementById('testingProgress');
     progressDiv.innerHTML = `<div class="error-message">${message}</div>`;
+}
+
+// 保存表单状态
+function saveFormState() {
+    if (!pageStateManager) return;
+    
+    const formState = {
+        modelSeries: getValue('modelSeries'),
+        modelVersion: getValue('modelVersion'),
+        modelTag: getValue('modelTag'),
+        modelPath: getValue('modelPath'),
+        imagePath: getValue('imagePath'),
+        numClasses: getValue('numClasses'),
+        timestamp: Date.now()
+    };
+    
+    pageStateManager.update({ formState: formState });
+}
+
+// 辅助函数：获取元素值
+function getValue(elementId) {
+    const element = document.getElementById(elementId);
+    return element ? element.value : '';
+}
+
+// 辅助函数：设置元素值
+function setValue(elementId, value) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.value = value || '';
+    }
+}
+
+// 恢复表单状态
+function restoreFormState(state) {
+    if (!state || !state.formState) return;
+    
+    const formState = state.formState;
+    
+    // 恢复表单值
+    setValue('modelSeries', formState.modelSeries);
+    setValue('modelPath', formState.modelPath);
+    setValue('imagePath', formState.imagePath);
+    setValue('numClasses', formState.numClasses);
+    
+    // 更新下拉选项
+    if (formState.modelSeries) {
+        updateVersionOptions(formState.modelSeries);
+        
+        // 延迟恢复版本和标签，确保选项已更新
+        setTimeout(() => {
+            if (formState.modelVersion) {
+                setValue('modelVersion', formState.modelVersion);
+                updateTagOptions(formState.modelSeries, formState.modelVersion);
+                
+                setTimeout(() => {
+                    if (formState.modelTag) {
+                        setValue('modelTag', formState.modelTag);
+                    }
+                }, 100);
+            }
+        }, 100);
+    }
+}
+
+// 恢复页面状态
+async function restorePageState() {
+    // 加载本地状态
+    pageStateManager.load();
+    const state = pageStateManager.getState();
+    
+    // 恢复表单状态
+    restoreFormState(state);
+    
+    // 检查服务器状态并恢复进度
+    try {
+        const restoreResult = await pageRestorer.checkAndRestore();
+        
+        if (restoreResult.shouldRestore && restoreResult.serverStatus) {
+            const serverState = restoreResult.serverStatus;
+            
+            // 显示控制按钮
+            const controlsElement = document.querySelector('.testing-controls');
+            if (controlsElement) {
+                controlsElement.style.display = 'block';
+            }
+            
+            // 开始状态检查
+            startStatusCheck();
+            
+            // 恢复日志内容
+            const currentState = pageStateManager.getState();
+            const logs = currentState.logs || [];
+            updateTestingProgress({
+                status: serverState.status,
+                message: serverState.message || '测试进行中',
+                stdout: logs.map(log => log.content).join('\n'),
+                progress: serverState.progress || 0
+            });
+        }
+    } catch (error) {
+        console.error('恢复页面状态失败:', error);
+    }
+}
+
+// 绑定表单事件以保存状态
+function bindFormEvents() {
+    const formElements = ['modelSeries', 'modelVersion', 'modelTag', 'modelPath', 'imagePath', 'numClasses'];
+    
+    formElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', saveFormState);
+            element.addEventListener('input', saveFormState);
+        }
+    });
 }

@@ -554,6 +554,55 @@ def serve_perf_image(image_path):
         print(f"提供图片文件时出错: {str(e)}")
         return str(e), 500
 
+@app.route('/test-result-image/<path:image_name>')
+def serve_test_result_image(image_name):
+    """提供测试结果图片服务"""
+    try:
+        # 获取项目根目录
+        base_dir = Path(__file__).parent
+        
+        # 测试结果图片路径
+        image_path = base_dir / "logs" / "test_output" / image_name
+        
+        # 确保文件存在且在项目目录内（安全检查）
+        image_path = image_path.resolve()
+        base_dir = base_dir.resolve()
+        
+        if not str(image_path).startswith(str(base_dir)):
+            return "Access denied", 403
+            
+        if not image_path.exists():
+            print(f"测试结果图片不存在: {image_path}")
+            return "Image not found", 404
+            
+        print(f"提供测试结果图片: {image_path}")
+        return send_file(str(image_path), mimetype='image/jpeg')
+        
+    except Exception as e:
+        print(f"提供测试结果图片时出错: {str(e)}")
+        return f"Error serving test result image: {str(e)}", 500
+
+@app.route('/original-image')
+def serve_original_image():
+    """提供原始测试图片服务"""
+    try:
+        image_path = request.args.get('path')
+        if not image_path:
+            return "Missing path parameter", 400
+            
+        # 检查文件是否存在
+        image_path = Path(image_path)
+        if not image_path.exists():
+            print(f"原始图片不存在: {image_path}")
+            return "Image not found", 404
+            
+        print(f"提供原始图片: {image_path}")
+        return send_file(str(image_path))
+        
+    except Exception as e:
+        print(f"提供原始图片时出错: {str(e)}")
+        return f"Error serving original image: {str(e)}", 500
+
 @app.route('/model-delete', methods=['GET', 'POST'])
 def model_delete():
     """模型去量化页面"""
