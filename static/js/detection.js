@@ -93,23 +93,23 @@ function restoreDetectionUI(serverStatus) {
     const detectionControls = document.querySelector('.detection-controls');
     
     const statusHtml = `
-        <div class="status-item">
+            <div class="status-item">
             <h3>检测状态: <span class="status-badge running">正在检测</span></h3>
-        </div>
-        <div class="status-item">
+            </div>
+            <div class="status-item">
             <h3>检测配置:</h3>
             <pre>${JSON.stringify(serverStatus.config || {}, null, 2)}</pre>
-        </div>
-        <div class="status-item">
+            </div>
+            <div class="status-item">
             <h3>运行日志:</h3>
             <div class="log-output" id="log-output"></div>
-        </div>
-    `;
-    
+            </div>
+        `;
+        
     DOMUtils.updateElement('#detectionProgress', statusHtml, true);
     DOMUtils.toggleDisplay('.detection-controls', true);
-    
-    // 隐藏性能分析图
+        
+        // 隐藏性能分析图
     DOMUtils.toggleDisplay('#perfImage', false);
     
     // 恢复日志内容
@@ -165,11 +165,11 @@ function restoreCompletedDetectionUI() {
             <h3>检测状态: <span class="status-badge completed">已完成</span></h3>
             <p>检测已于: ${new Date(savedState.timestamp).toLocaleString()} 完成</p>
         </div>
-        <div class="status-item">
+            <div class="status-item">
             <h3>检测日志:</h3>
             <div class="log-output" id="log-output"></div>
-        </div>
-    `;
+            </div>
+        `;
     
     DOMUtils.updateElement('#detectionProgress', statusHtml, true);
     DOMUtils.toggleDisplay('.detection-controls', false);
@@ -348,7 +348,7 @@ function pollDetectionStatus() {
 function updateDetectionLogOutput(data) {
     const logOutput = document.getElementById('log-output');
     if (!logOutput) return;
-    
+
     let hasNewLogs = false;
     
     if (data.stdout) {
@@ -372,10 +372,10 @@ function updateDetectionLogOutput(data) {
             }
         });
     }
-    
+
     // 自动滚动到底部
     if (hasNewLogs) {
-        logOutput.scrollTop = logOutput.scrollHeight;
+    logOutput.scrollTop = logOutput.scrollHeight;
     }
 }
 
@@ -446,9 +446,9 @@ async function stopDetection() {
     
     if (result.success) {
         updateDetectionStopped(result.data);
-    } else {
+            } else {
         alert('停止检测失败: ' + result.error);
-    }
+            }
 }
 
 // 文件浏览器相关功能
@@ -471,7 +471,7 @@ async function loadDirectory(path) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 path: path,
                 include_files: true,
                 file_pattern: '*.bin'
@@ -509,12 +509,12 @@ function updateFileList(data) {
             `;
             div.onclick = () => selectFile(item.path);
         } else {
-            div.className = 'file-item folder';
-            div.innerHTML = `
-                <i class="fas fa-folder"></i>
-                <span>${item.name}</span>
-            `;
-            div.onclick = () => loadDirectory(item.path);
+        div.className = 'file-item folder';
+        div.innerHTML = `
+            <i class="fas fa-folder"></i>
+            <span>${item.name}</span>
+        `;
+        div.onclick = () => loadDirectory(item.path);
         }
         fileList.appendChild(div);
     });

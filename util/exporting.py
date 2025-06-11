@@ -106,9 +106,9 @@ class ExportProcess:
                         export_script = base_path / "export.py"
                     else:
                         raise ValueError(f"不支持的YOLO模型版本: {config.model_version}")
-                    
+
                     if not export_script.exists():
-                        raise FileNotFoundError(f"YOLO导出脚本不存在: {export_script}")
+                            raise FileNotFoundError(f"YOLO导出脚本不存在: {export_script}")
 
                     os.chdir(base_path)
 
@@ -116,7 +116,7 @@ class ExportProcess:
                         "python3",
                         "export.py",
                         "--weights", config.model_path,
-                        "--img-size", str(config.image_size),  
+                            "--img-size", str(config.image_size),  
                         "--batch-size", "1"   
                     ]
                 else:

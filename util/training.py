@@ -181,10 +181,10 @@ class TrainingProcess:
                     # YOLO模型训练命令
                     rel_model_config = os.path.relpath(model_config, base_path)
                     rel_yaml_path = os.path.relpath(yaml_path, base_path)
-                    
+                
                     save_dir = base_dir / "logs" / "train_output" / f"{config.model_version}_{config.model_tag}_{config.model_size}"
                     save_dir.mkdir(parents=True, exist_ok=True)
-                    
+                
                     train_cmd = [
                         "python3",
                         "train.py",

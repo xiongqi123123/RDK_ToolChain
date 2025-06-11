@@ -58,7 +58,7 @@ function bindConversionFormEvents() {
             location.reload();
         });
     }
-    
+        
     // 绑定输入框的用户修改追踪
     const scaleValueInput = document.getElementById('scaleValue');
     const meanValueInput = document.getElementById('meanValue');
@@ -74,8 +74,8 @@ function bindConversionFormEvents() {
         meanValueInput.addEventListener('input', () => {
             meanValueInput.dataset.userModified = 'true';
         });
-    }
-    
+            }
+            
     if (removeNodeTypeInput) {
         removeNodeTypeInput.addEventListener('input', () => {
             removeNodeTypeInput.dataset.userModified = 'true';
@@ -125,11 +125,11 @@ function restoreConversionUI(serverStatus) {
         <div class="status-item">
             <h3>转换状态: <span class="status-badge running">正在转换</span></h3>
         </div>
-        <div class="status-item">
+            <div class="status-item">
             <h3>转换配置:</h3>
             <pre>${JSON.stringify(serverStatus.config || {}, null, 2)}</pre>
-        </div>
-        <div class="status-item">
+            </div>
+            <div class="status-item">
             <h3>运行日志:</h3>
             <div class="log-output" id="log-output"></div>
         </div>
@@ -157,16 +157,16 @@ function restoreConversionUIFromLocal() {
     const statusHtml = `
         <div class="status-item">
             <h3>转换状态: <span class="status-badge running">尝试重连中...</span></h3>
-        </div>
-        <div class="status-item">
+            </div>
+            <div class="status-item">
             <h3>运行日志:</h3>
             <div class="log-output" id="log-output"></div>
-        </div>
-    `;
-    
+            </div>
+        `;
+        
     DOMUtils.updateElement('#conversionProgress', statusHtml, true);
     DOMUtils.toggleDisplay('.conversion-controls', true);
-    
+        
     // 恢复日志
     const logs = conversionStateManager.getState().logs;
     if (logs && logs.length > 0) {
@@ -184,11 +184,11 @@ function restoreCompletedConversionUI() {
             <h3>转换状态: <span class="status-badge completed">已完成</span></h3>
             <p>转换已于: ${new Date(savedState.timestamp).toLocaleString()} 完成</p>
         </div>
-        <div class="status-item">
+            <div class="status-item">
             <h3>转换日志:</h3>
             <div class="log-output" id="log-output"></div>
-        </div>
-    `;
+            </div>
+        `;
     
     DOMUtils.updateElement('#conversionProgress', statusHtml, true);
     DOMUtils.toggleDisplay('.conversion-controls', false);
@@ -241,8 +241,8 @@ function restoreFormState() {
                 if (pathInput) pathInput.value = savedNodePaths[i] || '';
                 if (inputTypeSelect) inputTypeSelect.value = savedInputTypes[i] || '';
                 if (outputTypeSelect) outputTypeSelect.value = savedOutputTypes[i] || '';
-            }
-        }
+    }
+}
     }
 }
 
@@ -400,7 +400,7 @@ function updateConversionLogOutput(data) {
     if (!logOutput) return;
     
     let hasNewLogs = false;
-    
+
     if (data.stdout) {
         const lines = data.stdout.split('\n');
         lines.forEach(line => {
@@ -422,10 +422,10 @@ function updateConversionLogOutput(data) {
             }
         });
     }
-    
+
     // 自动滚动到底部
     if (hasNewLogs) {
-        logOutput.scrollTop = logOutput.scrollHeight;
+    logOutput.scrollTop = logOutput.scrollHeight;
     }
 }
 
@@ -474,9 +474,9 @@ async function stopConversion() {
     
     if (result.success) {
         updateConversionStopped(result.data);
-    } else {
+            } else {
         alert('停止转换失败: ' + result.error);
-    }
+            }
 }
 
 // 文件浏览器相关功能
@@ -520,7 +520,7 @@ async function loadDirectory(path, includeFiles) {
         if (includeFiles && currentBrowserMode === 'model') {
             requestBody.file_pattern = '*.onnx';
         }
-
+        
         const response = await fetch('/api/list-directory', {
             method: 'POST',
             headers: {
@@ -569,13 +569,13 @@ function updateFileList(data) {
                 loadDirectory(item.path, includeFiles);
             };
         }
-        fileList.appendChild(div);
-    });
+            fileList.appendChild(div);
+        });
 }
 
 function selectFile(filePath) {
     if (currentBrowserMode === 'model') {
-        document.getElementById('modelPath').value = filePath;
+    document.getElementById('modelPath').value = filePath;
     }
     closeFileBrowser();
 }
@@ -583,7 +583,7 @@ function selectFile(filePath) {
 function selectCurrentFolder() {
     const currentPath = document.getElementById('currentPath').textContent;
     if (currentBrowserMode === 'caldata') {
-        document.getElementById('calDataDir').value = currentPath;
+    document.getElementById('calDataDir').value = currentPath;
     }
     closeFileBrowser();
 }
@@ -593,7 +593,7 @@ function navigateUp() {
     const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
     const includeFiles = currentBrowserMode === 'model';
     loadDirectory(parentPath, includeFiles);
-}
+    }
 
 // 节点信息管理
 function addNodeInfo() {

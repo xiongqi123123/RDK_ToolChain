@@ -138,12 +138,12 @@ class ConversionConfig:
         work_dir.mkdir(parents=True, exist_ok=True)
 
         model_parameters = {
-            'onnx_model': self.model_path,
-            'march': self.march_type,
-            'layer_out_dump': False,
-            'working_dir': str(work_dir),
-            'output_model_file_prefix': 'converted_model',
-            'node_info': self.node_info  # 直接使用字典
+                'onnx_model': self.model_path,
+                'march': self.march_type,
+                'layer_out_dump': False,
+                'working_dir': str(work_dir),
+                'output_model_file_prefix': 'converted_model',
+                'node_info': self.node_info  # 直接使用字典
         }
         
         # 如果有remove_node_type，添加到配置中

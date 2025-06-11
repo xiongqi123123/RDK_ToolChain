@@ -450,7 +450,7 @@ function showRemoveStarted(selectedNodes) {
 function pollDeleteStatus() {
     if (!deleteStateManager.isRunning()) return;
     
-    fetch('/delete-status')
+        fetch('/delete-status')
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -583,9 +583,9 @@ function showNodeSelection(nodes) {
     
     DOMUtils.toggleDisplay('#nodeSelection', true);
     
-    let nodesHtml = '';
+        let nodesHtml = '';
     nodes.forEach((node, index) => {
-        nodesHtml += `
+            nodesHtml += `
             <div class="node-item" style="
                 margin: 8px 0; 
                 padding: 15px; 
@@ -658,10 +658,10 @@ function showNodeSelection(nodes) {
                             ">${node.name}</div>
                         </div>
                     </div>
-                </label>
-            </div>`;
-    });
-    nodeListDiv.innerHTML = nodesHtml;
+                    </label>
+                </div>`;
+        });
+        nodeListDiv.innerHTML = nodesHtml;
     
     console.log('显示节点选择区域，共' + nodes.length + '个节点');
 }
@@ -684,8 +684,8 @@ function handleRemoveComplete(data) {
     // 隐藏节点选择区域
     DOMUtils.toggleDisplay('#nodeSelection', false);
     
-    stopPolling();
-}
+        stopPolling();
+    }
 
 // 处理操作停止
 function handleOperationStopped(data) {
@@ -701,8 +701,8 @@ function handleOperationStopped(data) {
     DOMUtils.updateClass('.status-badge', 'status-badge stopped');
     DOMUtils.updateElement('.status-badge', '已停止');
     
-    stopPolling();
-}
+        stopPolling();
+    }
 
 // 处理操作错误
 function handleOperationError(data) {
@@ -718,7 +718,7 @@ function handleOperationError(data) {
     DOMUtils.updateClass('.status-badge', 'status-badge error');
     DOMUtils.updateElement('.status-badge', '发生错误');
     
-    stopPolling();
+        stopPolling();
 }
 
 // 停止进程
@@ -774,7 +774,7 @@ async function loadDirectory(path) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 path: path,
                 include_files: true,
                 file_pattern: '*.bin'
@@ -811,14 +811,14 @@ function updateFileList(data) {
                 <span>${item.name}</span>
             `;
             div.onclick = () => selectFile(item.path);
-        } else {
+            } else {
             div.className = 'file-item folder';
             div.innerHTML = `
                 <i class="fas fa-folder"></i>
                 <span>${item.name}</span>
             `;
             div.onclick = () => loadDirectory(item.path);
-        }
+            }
         fileList.appendChild(div);
     });
 }

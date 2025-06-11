@@ -1091,10 +1091,10 @@ function updateTagOptions(modelSeries, selectedVersion) {
     document.getElementById('modelSize').innerHTML = '<option value="">请选择大小</option>';
     
     // 隐藏关键点配置
-    const kptShapeGroup = document.getElementById('kptShapeGroup');
+        const kptShapeGroup = document.getElementById('kptShapeGroup');
     if (kptShapeGroup) {
-        kptShapeGroup.style.display = 'none';
-    }
+            kptShapeGroup.style.display = 'none';
+        }
 }
 
 // 更新大小选项
@@ -1154,8 +1154,8 @@ function pollTrainingStatus() {
                 // 更新状态标签
                 const statusBadge = document.querySelector('.status-badge');
                 if (statusBadge) {
-                    statusBadge.className = 'status-badge running';
-                    statusBadge.textContent = '正在运行';
+                statusBadge.className = 'status-badge running';
+                statusBadge.textContent = '正在运行';
                 }
                 
                 // 更新当前轮次到状态管理
@@ -1178,12 +1178,12 @@ function pollTrainingStatus() {
                     console.log('计算的进度:', progress);  // 调试日志
                     
                     if (progressBar) {
-                        progressBar.style.transition = 'width 0.5s ease-in-out';
-                        progressBar.style.width = `${progress}%`;
-                        progressBar.textContent = `${progress.toFixed(1)}%`;
+                    progressBar.style.transition = 'width 0.5s ease-in-out';
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.textContent = `${progress.toFixed(1)}%`;
                     }
                     if (currentEpoch) {
-                        currentEpoch.textContent = `当前轮次: ${data.current_epoch}/${trainingStatus.totalEpochs}`;
+                    currentEpoch.textContent = `当前轮次: ${data.current_epoch}/${trainingStatus.totalEpochs}`;
                     }
                 }
                 
@@ -1199,8 +1199,8 @@ function pollTrainingStatus() {
                             stdoutDiv.className = 'stdout';
                             stdoutDiv.textContent = line;
                             if (logOutput) {
-                                logOutput.appendChild(stdoutDiv);
-                            }
+                            logOutput.appendChild(stdoutDiv);
+                        }
                             
                             // 保存到状态（限制日志数量避免内存过大）
                             trainingStatus.logs.push({
@@ -1220,8 +1220,8 @@ function pollTrainingStatus() {
                             stderrDiv.className = 'stderr';
                             stderrDiv.textContent = line;
                             if (logOutput) {
-                                logOutput.appendChild(stderrDiv);
-                            }
+                            logOutput.appendChild(stderrDiv);
+                        }
                             
                             // 保存到状态
                             trainingStatus.logs.push({
@@ -1246,7 +1246,7 @@ function pollTrainingStatus() {
                 
                 // 自动滚动到底部
                 if (logOutput) {
-                    logOutput.scrollTop = logOutput.scrollHeight;
+                logOutput.scrollTop = logOutput.scrollHeight;
                 }
                 
                 // 继续轮询
@@ -1285,13 +1285,13 @@ function updateTrainingComplete(data) {
     });
     
     if (trainingControls) {
-        trainingControls.style.display = 'none';
+    trainingControls.style.display = 'none';
     }
     
     const statusBadge = document.querySelector('.status-badge');
     if (statusBadge) {
-        statusBadge.className = 'status-badge completed';
-        statusBadge.textContent = '已完成';
+    statusBadge.className = 'status-badge completed';
+    statusBadge.textContent = '已完成';
     }
     
     // 重新启用表单
@@ -1312,13 +1312,13 @@ function updateTrainingStopped(data) {
     });
     
     if (trainingControls) {
-        trainingControls.style.display = 'none';
+    trainingControls.style.display = 'none';
     }
     
     const statusBadge = document.querySelector('.status-badge');
     if (statusBadge) {
-        statusBadge.className = 'status-badge stopped';
-        statusBadge.textContent = '已停止';
+    statusBadge.className = 'status-badge stopped';
+    statusBadge.textContent = '已停止';
     }
     
     // 重新启用表单
@@ -1466,7 +1466,7 @@ window.onclick = function(event) {
 }
 
 // 为关闭按钮添加事件监听
-document.querySelector('.close').onclick = closeFileBrowser;
+document.querySelector('.close').onclick = closeFileBrowser; 
 
 // 更新数据集结构显示
 function updateDatasetStructureDisplay(modelSeries) {
