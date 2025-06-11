@@ -545,7 +545,32 @@ function startTesting() {
             showError(data.message);
             testingStatus.update({ isTesting: false, status: 'error' });
         } else {
-            updateTestingProgress({ status: '测试已开始', progress: 0 });
+            // 首先显示初始状态
+            const progressDiv = document.getElementById('testingProgress');
+            progressDiv.innerHTML = `
+                <div class="status-item" style="margin-bottom: 15px;">
+                    <h3>测试状态: <span class="status-badge running" style="background-color: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-size: 14px;">正在运行</span></h3>
+                    <p style="color: #666; margin: 10px 0;">测试已开始，正在初始化...</p>
+                </div>
+                <div class="log-section" style="margin-top: 20px;">
+                    <h4 style="margin-bottom: 10px; color: #495057;">测试日志:</h4>
+                    <div class="log-container" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; max-height: 300px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.4;">
+                        <div style="color: #495057;">测试任务已提交，等待处理...</div>
+                    </div>
+                </div>
+            `;
+            
+            // 保存初始日志
+            if (!testingStatus.logs) {
+                testingStatus.logs = [];
+            }
+            testingStatus.logs.push({
+                type: 'info',
+                content: '测试任务已提交，等待处理...',
+                timestamp: Date.now()
+            });
+            testingStatus.save();
+            
             // 开始定期检查状态
             startStatusCheck();
         }
@@ -599,13 +624,26 @@ function checkTestingStatus() {
     fetch('/api/testing-status')
         .then(response => response.json())
         .then(data => {
+            console.log('从服务器获取的测试状态数据:', data);
+            console.log('数据结构分析:');
+            console.log('- status:', data.status);
+            console.log('- message:', data.message);
+            console.log('- stdout:', data.stdout ? '有' : '无');
+            console.log('- stderr:', data.stderr ? '有' : '无');
+            
             if (data.status === 'error') {
                 showError(data.message);
                 stopStatusCheck();
                 return;
             }
             
-            updateTestingProgress(data);
+            // 只有在运行状态时才更新进度
+            if (data.status === 'running') {
+                console.log('状态为运行中，更新进度');
+                updateTestingProgress(data);
+            } else {
+                console.log('状态不是running，当前状态:', data.status);
+            }
             
             if (data.status === 'completed') {
                 stopStatusCheck();
@@ -618,8 +656,7 @@ function checkTestingStatus() {
                 
                 updateTestingProgress({
                     status: '测试已完成',
-                    message: '测试完成，检测结果如下：',
-                    progress: 100
+                    message: '测试完成，检测结果如下：'
                 });
                 showTestResult(data);
             } else if (data.status === 'stopped') {
@@ -637,8 +674,7 @@ function checkTestingStatus() {
                 } else {
                     updateTestingProgress({
                         status: '测试已停止',
-                        message: '测试已手动停止',
-                        progress: 0
+                        message: '测试已手动停止'
                     });
                 }
             }
@@ -652,20 +688,208 @@ function checkTestingStatus() {
 
 // 更新测试进度
 function updateTestingProgress(data) {
+    console.log('更新测试进度，收到数据:', data);
     const progressDiv = document.getElementById('testingProgress');
+    
+    // 构建状态消息 - 优先显示有意义的消息
+    let statusMessage = '测试进行中';
+    if (data.message && data.message !== '测试进行中') {
+        statusMessage = data.message;
+    } else if (data.stdout && data.stdout.includes('Loading model')) {
+        statusMessage = '正在加载模型...';
+    } else if (data.stdout && data.stdout.includes('Processing')) {
+        statusMessage = '正在处理图片...';
+    } else if (data.stdout && data.stdout.includes('Inference')) {
+        statusMessage = '正在进行推理...';
+    } else if (data.stderr && data.stderr.includes('Draw Results')) {
+        statusMessage = '正在生成检测结果...';
+    } else if (data.stderr && data.stderr.includes('saved in path')) {
+        statusMessage = '结果已保存，即将完成...';
+    }
+    
+    // 构建日志输出
+    let logOutput = '';
+    let hasLogs = false;
+    
+    // 检查是否有日志数据
+    if (data.stdout && data.stdout.trim()) {
+        hasLogs = true;
+        console.log('检测到stdout日志:', data.stdout);
+    }
+    if (data.stderr && data.stderr.trim()) {
+        hasLogs = true;
+        console.log('检测到stderr日志:', data.stderr);
+    }
+    
+    // 如果有新日志，先保存到本地状态
+    if (hasLogs) {
+        console.log('检测到新日志，先保存到本地状态');
+        saveLogsToStatus(data);
+    }
+    
+    // 统一显示所有累积的日志（无论是新日志还是恢复）
+    if (testingStatus.logs && testingStatus.logs.length > 0) {
+        console.log('显示累积的所有日志，共', testingStatus.logs.length, '条');
+        logOutput = `
+            <div class="log-section" style="margin-top: 20px;">
+                <h4 style="margin-bottom: 10px; color: #495057;">测试日志:</h4>
+                <div class="log-container" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; max-height: 300px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.4;">
+        `;
+        
+        // 显示所有累积的日志
+        testingStatus.logs.forEach(log => {
+            const color = log.type === 'error' ? '#dc3545' : '#495057';
+            const prefix = log.type === 'error' ? '[错误] ' : '';
+            logOutput += `<div style="margin-bottom: 2px; color: ${color};">${prefix}${escapeHtml(log.content)}</div>`;
+        });
+        
+        logOutput += `
+                </div>
+            </div>
+        `;
+    } else {
+        // 显示等待日志的提示
+        logOutput = `
+            <div class="log-section" style="margin-top: 20px;">
+                <h4 style="margin-bottom: 10px; color: #495057;">测试日志:</h4>
+                <div class="log-container" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; max-height: 300px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.4;">
+                    <div style="color: #6c757d; font-style: italic;">等待测试输出...</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 根据状态确定显示样式
+    let statusBadge = '';
+    let statusClass = 'running';
+    let statusBgColor = '#007bff';
+    let statusText = '正在运行';
+    
+    if (data.status === 'completed') {
+        statusClass = 'completed';
+        statusBgColor = '#28a745';  // 绿色
+        statusText = '已完成';
+    } else if (data.status === 'stopped') {
+        statusClass = 'stopped';
+        statusBgColor = '#6c757d';  // 灰色
+        statusText = '已停止';
+    } else if (data.status === 'error') {
+        statusClass = 'error';
+        statusBgColor = '#dc3545';  // 红色
+        statusText = '错误';
+    }
+    
+    statusBadge = `<span class="status-badge ${statusClass}" style="background-color: ${statusBgColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 14px;">${statusText}</span>`;
+    
+    // 更新页面内容
     progressDiv.innerHTML = `
-        <div class="status-message">${data.message}</div>
-        ${data.progress !== undefined ? `<div class="progress-bar">
-            <div class="progress" style="width: ${data.progress}%"></div>
-        </div>` : ''}
-        ${data.stdout ? `<div class="output-log">${data.stdout}</div>` : ''}
-        ${data.stderr ? `<div class="error-log">${data.stderr}</div>` : ''}
+        <div class="status-item" style="margin-bottom: 15px;">
+            <h3>测试状态: ${statusBadge}</h3>
+            <p style="color: #666; margin: 10px 0;">${statusMessage}</p>
+        </div>
+        ${logOutput}
     `;
+    
+    // 自动滚动到日志底部
+    setTimeout(() => {
+        const logContainer = document.querySelector('.log-container');
+        if (logContainer) {
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+    }, 100);
+}
+
+// HTML转义函数
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// 保存日志到本地状态
+function saveLogsToStatus(data) {
+    console.log('保存日志到状态，输入数据:', data);
+    
+    if (!testingStatus.logs) {
+        testingStatus.logs = [];
+    }
+    
+    // 记录当前日志长度，避免重复添加
+    const currentLogCount = testingStatus.logs.length;
+    console.log('当前日志条数:', currentLogCount);
+    
+    if (data.stdout && data.stdout.trim()) {
+        const stdoutLines = data.stdout.split('\n').filter(line => line.trim());
+        console.log('处理stdout行数:', stdoutLines.length);
+        stdoutLines.forEach(line => {
+            // 检查是否已存在相同内容的日志
+            const exists = testingStatus.logs.some(log => 
+                log.content === line && log.type === 'info'
+            );
+            
+            if (!exists) {
+                testingStatus.logs.push({
+                    type: 'info',
+                    content: line,
+                    timestamp: Date.now()
+                });
+                console.log('添加新日志:', line);
+            }
+        });
+    }
+    
+    if (data.stderr && data.stderr.trim()) {
+        const stderrLines = data.stderr.split('\n').filter(line => line.trim());
+        console.log('处理stderr行数:', stderrLines.length);
+        stderrLines.forEach(line => {
+            // 判断是否为真正的错误信息
+            // INFO级别的日志不应该显示为错误
+            const isActualError = !line.includes('[INFO]') && 
+                                  !line.includes('INFO') && 
+                                  !line.includes('Draw Results:') &&
+                                  !line.includes('saved in path:') &&
+                                  !line.includes('output[') &&
+                                  !line.includes('self.') &&
+                                  !line.includes('Shape:') &&
+                                  !line.includes('Type:');
+            
+            const logType = isActualError ? 'error' : 'info';
+            
+            // 检查是否已存在相同内容的日志
+            const exists = testingStatus.logs.some(log => 
+                log.content === line && log.type === logType
+            );
+            
+            if (!exists) {
+                testingStatus.logs.push({
+                    type: logType,
+                    content: line,
+                    timestamp: Date.now()
+                });
+                console.log(`添加新${isActualError ? '错误' : '信息'}日志:`, line);
+            }
+        });
+    }
+    
+    // 如果有新日志添加，保持最近200行日志并保存
+    if (testingStatus.logs.length > currentLogCount) {
+        console.log('日志有更新，从', currentLogCount, '增加到', testingStatus.logs.length);
+        testingStatus.logs = testingStatus.logs.slice(-200);
+        testingStatus.save();
+    } else {
+        console.log('没有新增日志');
+    }
 }
 
 // 显示测试结果
 function showTestResult(data) {
     console.log('显示测试结果:', data);
+    
+    // 更新状态为已完成
+    updateTestingProgress({
+        status: 'completed',
+        message: '测试完成，检测结果如下：'
+    });
     
     const resultDiv = document.getElementById('testResult');
     resultDiv.style.display = 'block';
@@ -998,25 +1222,17 @@ function restoreTestingUI(serverStatus) {
         }
     });
     
-    // 显示测试状态
-    const testingProgress = document.getElementById('testingProgress');
+    // 显示测试控制按钮
     const testingControls = document.querySelector('.testing-controls');
-    
-    testingProgress.innerHTML = `
-        <div class="status-item">
-            <h3>测试状态: <span class="status-badge running">正在运行</span></h3>
-            <p>测试进度: ${serverStatus.progress || 0}%</p>
-        </div>
-        <div class="progress-container">
-            <div class="progress-bar" style="width: ${serverStatus.progress || 0}%">${serverStatus.progress || 0}%</div>
-        </div>
-        <div class="status-item">
-            <h3>测试日志:</h3>
-            <div class="log-output">${serverStatus.stdout || '等待输出...'}</div>
-        </div>
-    `;
-    
     testingControls.style.display = 'block';
+    
+    // 使用更新进度函数来显示当前状态和日志
+    updateTestingProgress({
+        message: '恢复测试任务中...',
+        progress: serverStatus.progress || 0,
+        stdout: serverStatus.stdout || '',
+        stderr: serverStatus.stderr || ''
+    });
     
     console.log('测试UI恢复完成');
 }
@@ -1027,47 +1243,21 @@ function restoreTestingUIFromLocal() {
     
     console.log('根据本地状态恢复UI...');
     
-    const testingProgress = document.getElementById('testingProgress');
     const testingControls = document.querySelector('.testing-controls');
-    
-    testingProgress.innerHTML = `
-        <div class="status-item">
-            <h3>测试状态: <span class="status-badge running">尝试重连中...</span></h3>
-            <p>正在尝试重新连接服务器...</p>
-        </div>
-        <div class="progress-container">
-            <div class="progress-bar" style="width: 0%">重连中...</div>
-        </div>
-        <div class="status-item">
-            <h3>测试日志:</h3>
-            <div class="log-output"></div>
-        </div>
-    `;
-    
     testingControls.style.display = 'block';
     
-    // 恢复日志
-    const logOutput = document.querySelector('.log-output');
+    // 构建本地日志输出
+    let localLogs = '';
     if (testingStatus.logs && testingStatus.logs.length > 0) {
-        testingStatus.logs.forEach(log => {
-            const logDiv = document.createElement('div');
-            logDiv.className = log.type || 'info';
-            logDiv.style.marginBottom = '4px';
-            logDiv.style.padding = '2px 0';
-            if (log.type === 'error') {
-                logDiv.style.color = '#dc3545';
-            } else if (log.type === 'warning') {
-                logDiv.style.color = '#fd7e14';
-            } else {
-                logDiv.style.color = '#495057';
-            }
-            logDiv.textContent = log.content;
-            logOutput.appendChild(logDiv);
-        });
-        logOutput.scrollTop = logOutput.scrollHeight;
-    } else {
-        logOutput.innerHTML = '<p style="color: #6c757d; font-style: italic; margin: 0;">暂无日志记录</p>';
+        localLogs = testingStatus.logs.map(log => log.content).join('\n');
     }
+    
+    // 使用更新进度函数显示重连状态
+    updateTestingProgress({
+        message: '网络连接中断，正在尝试重新连接服务器...',
+        progress: 0,
+        stdout: localLogs || '正在尝试恢复日志...'
+    });
 }
 
 // 恢复已完成的测试UI
