@@ -45,9 +45,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
        graphviz \
     && rm -rf /var/lib/apt/lists/* \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
-    && update-alternatives --set python3 /usr/bin/python3.10 \
-    && curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
+    && update-alternatives --set python3 /usr/bin/python3.10 
 
+# RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
+RUN apt install -y python3-pip
 # 设置pip源为清华源
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
@@ -69,18 +70,21 @@ RUN pip install --no-cache-dir numpy==1.26.1 cython
 # 安装 pycocotools
 COPY deps/cocoapi /app/deps/cocoapi
 RUN cd /app/deps/cocoapi/PythonAPI && \
+    sed -i "s/version='2.0'/version='2.0.3'/" setup.py && \
     python3 setup.py build_ext install && \
     cd ../..
 
-# 复制本地 wheel 包和 requirements 文件
-COPY deps/wheels/*.whl ./deps/wheels/
-COPY requirements_docker.txt .
-
-# 修改安装命令，分开执行
-# RUN pip install --no-cache-dir --no-deps --ignore-installed -r requirements_docker.txt
-RUN pip install --no-cache-dir --ignore-installed -r requirements_docker.txt
-# 复制项目文件
+# 先复制整个项目文件（包括deps目录）
 COPY . .
+
+# 安装Python依赖
+RUN pip install --no-cache-dir --ignore-installed -r requirements_docker.txt
+
+# 降级setuptools以兼容timeout-decorator，然后安装wheel文件
+RUN pip install setuptools==68.0.0 && \
+    cd /app/deps/wheels && \
+    pip install *.whl && \
+    cd /app
 
 # 确保CUDA相关库文件存在并更新库缓存
 RUN ldconfig && \
@@ -89,7 +93,7 @@ RUN python3 -m venv /opt/label-studio && \
     . /opt/label-studio/bin/activate && \
     pip install --no-cache-dir label-studio==1.11.0 && \
     deactivate
-
+RUN ln -s 
 # 复制并设置启动脚本权限
 COPY start_services.sh /app/
 RUN chmod +x /app/start_services.sh

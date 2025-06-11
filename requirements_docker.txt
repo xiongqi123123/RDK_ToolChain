@@ -62,15 +62,15 @@ schema>=0.7.2
 # 添加缺失的依赖
 bcrypt>=4.0.1
 
-# Horizon工具链（请确保deps/wheels目录中有对应的wheel文件）
-hbdk @ file:deps/wheels/hbdk-3.49.15-cp310-cp310-linux_x86_64.whl
-hbdk-model-verifier @ file:deps/wheels/hbdk_model_verifier-3.49.15-py3-none-linux_x86_64.whl
-horizon-nn @ file:deps/wheels/horizon_nn-1.1.0-cp310-cp310-linux_x86_64.whl
-horizon-nn-gpu @ file:deps/wheels/horizon_nn_gpu-1.1.0-cp310-cp310-linux_x86_64.whl
-horizon-plugin-profiler @ file:deps/wheels/horizon_plugin_profiler-2.3.6-py3-none-any.whl
-horizon-plugin-pytorch @ file:deps/wheels/horizon_plugin_pytorch-2.3.6+cu116.torch1130-cp310-cp310-linux_x86_64.whl
-horizon-torch-samples @ file:deps/wheels/horizon_torch_samples-2.3.8-py3-none-any.whl
-horizon_tc_ui @ file:deps/wheels/horizon_tc_ui-1.24.3-cp310-cp310-linux_x86_64.whl
+# Horizon工具链（本地wheel文件）
+# ./deps/wheels/hbdk-3.49.15-cp310-cp310-linux_x86_64.whl
+# ./deps/wheels/hbdk_model_verifier-3.49.15-py3-none-linux_x86_64.whl
+# ./deps/wheels/horizon_nn-1.1.0-cp310-cp310-linux_x86_64.whl
+# ./deps/wheels/horizon_nn_gpu-1.1.0-cp310-cp310-linux_x86_64.whl
+# ./deps/wheels/horizon_plugin_profiler-2.3.6-py3-none-any.whl
+# ./deps/wheels/horizon_plugin_pytorch-2.3.6+cu116.torch1130-cp310-cp310-linux_x86_64.whl
+# ./deps/wheels/horizon_torch_samples-2.3.8-py3-none-any.whl
+# ./deps/wheels/horizon_tc_ui-1.24.3-cp310-cp310-linux_x86_64.whl
 
 # 可选依赖（如果需要COCO数据集支持，取消注释）
 # pycocotools==2.0.3
