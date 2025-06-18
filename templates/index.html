@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/board_monitor.css') }}">
 </head>
 <body>
     <header>
@@ -99,6 +100,9 @@
     </footer>
 
     <!-- 通用状态管理脚本由各个页面单独加载，避免重复加载 -->
+    
+    <!-- 开发板监控组件脚本 - 在所有页面加载 -->
+    <script src="{{ url_for('static', filename='js/board_monitor.js') }}"></script>
     
     <script>
     async function downloadLogs() {

@@ -1,0 +1,548 @@
+/* 开发板监控浮窗样式 */
+.board-monitor-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 320px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid #ddd;
+    z-index: 1000;
+    font-size: 14px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.board-monitor-widget.minimized {
+    height: 45px;
+}
+
+.board-monitor-widget.maximized {
+    height: auto;
+    max-height: 500px;
+}
+
+/* 浮窗头部 */
+.monitor-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.monitor-title {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.monitor-title i {
+    font-size: 16px;
+}
+
+.monitor-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* 设备信息栏 */
+.device-info-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #FFF3E0;
+    border-top: 1px solid #FFE0B2;
+    font-size: 12px;
+}
+
+.device-name-top {
+    font-weight: bold;
+    color: #E65100;
+}
+
+.device-info-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.device-ip-top {
+    font-weight: bold;
+    color: #E65100;
+    font-family: monospace;
+}
+
+.disconnect-btn-small {
+    background: #f44336;
+    border: none;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: background-color 0.2s;
+}
+
+.disconnect-btn-small:hover {
+    background: #d32f2f;
+}
+
+.monitor-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.monitor-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.monitor-btn i {
+    font-size: 12px;
+}
+
+/* 连接状态指示器 */
+.connection-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: 5px;
+    transition: background-color 0.3s;
+}
+
+.connection-status.connected {
+    background-color: #4CAF50;
+    box-shadow: 0 0 5px #4CAF50;
+}
+
+.connection-status.disconnected {
+    background-color: #f44336;
+}
+
+.connection-status.connecting {
+    background-color: #FF9800;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* 浮窗内容 */
+.monitor-content {
+    padding: 15px;
+    max-height: 430px;
+    overflow-y: auto;
+}
+
+/* 连接表单 */
+.connection-form {
+    margin-bottom: 15px;
+}
+
+.connection-form.hidden {
+    display: none;
+}
+
+.form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.form-group-mini {
+    flex: 1;
+}
+
+.form-group-mini label {
+    display: block;
+    margin-bottom: 3px;
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+}
+
+.form-group-mini input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    box-sizing: border-box;
+}
+
+.form-group-mini input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.2);
+}
+
+.connect-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.connect-btn,
+.disconnect-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.connect-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.connect-btn:hover {
+    background-color: var(--secondary-color);
+}
+
+.connect-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.disconnect-btn {
+    background-color: #f44336;
+    color: white;
+}
+
+.disconnect-btn:hover {
+    background-color: #d32f2f;
+}
+
+/* 状态显示区域 */
+.status-display {
+    margin-top: 15px;
+}
+
+.status-display.hidden {
+    display: none;
+}
+
+.board-info {
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.board-info h4 {
+    margin: 0 0 5px 0;
+    color: var(--primary-color);
+    font-size: 13px;
+}
+
+.board-info-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 3px;
+    color: #666;
+}
+
+.board-info-single-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 12px;
+}
+
+.device-name {
+    font-weight: bold;
+    color: #FF8C00;
+    flex: 1;
+}
+
+.device-ip {
+    color: #666;
+    font-family: monospace;
+    font-size: 11px;
+}
+
+/* 监控指标 */
+.monitor-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.metric-card {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #e9ecef;
+}
+
+.metric-label {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.metric-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 2px;
+}
+
+.metric-unit {
+    font-size: 10px;
+    color: #999;
+}
+
+/* CPU指标特殊样式 */
+.metric-card.cpu .metric-value {
+    color: #2196F3;
+}
+
+/* 内存指标特殊样式 */
+.metric-card.memory .metric-value {
+    color: #4CAF50;
+}
+
+/* 温度指标特殊样式 */
+.metric-card.temperature .metric-value {
+    color: #FF5722;
+}
+
+/* BPU指标特殊样式 */
+.metric-card.bpu .metric-value {
+    color: #9C27B0;
+}
+
+.metric-card.gpu .metric-value {
+    color: #4CAF50;
+}
+
+/* 内存详细信息 */
+.memory-details {
+    grid-column: 1 / -1;
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.memory-bar {
+    background: #e0e0e0;
+    border-radius: 10px;
+    height: 6px;
+    margin: 5px 0;
+    overflow: hidden;
+}
+
+.memory-used {
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.3s ease;
+}
+
+.memory-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #666;
+    margin-top: 3px;
+}
+
+/* 系统负载 */
+.load-info {
+    grid-column: 1 / -1;
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.load-values {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 5px;
+}
+
+.load-item {
+    text-align: center;
+}
+
+.load-item .load-label {
+    font-size: 10px;
+    color: #666;
+}
+
+.load-item .load-value {
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+}
+
+/* 错误和状态消息 */
+.status-message {
+    padding: 8px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    text-align: center;
+}
+
+.status-message.error {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.status-message.success {
+    background: #e8f5e8;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.status-message.info {
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+/* 最后更新时间 */
+.last-update {
+    text-align: center;
+    font-size: 10px;
+    color: #999;
+    margin-top: 10px;
+    border-top: 1px solid #eee;
+    padding-top: 8px;
+}
+
+/* 滚动条样式 */
+.monitor-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.monitor-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.monitor-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.monitor-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .board-monitor-widget {
+        width: 280px;
+        bottom: 10px;
+        right: 10px;
+    }
+    
+    .monitor-metrics {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 动画效果 */
+.metric-value {
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 小数字样式优化 */
+.metric-value.small-text {
+    font-size: 14px;
+}
+
+.metric-value.medium-text {
+    font-size: 16px;
+}
+
+/* 状态图标 */
+.status-icon {
+    margin-right: 5px;
+}
+
+.status-icon.success {
+    color: #4CAF50;
+}
+
+.status-icon.error {
+    color: #f44336;
+}
+
+.status-icon.warning {
+    color: #FF9800;
+}
+
+/* BPU详情样式 */
+.bpu-details {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.bpu-cores {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 5px;
+}
+
+.bpu-core {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #333;
+    background: rgba(156, 39, 176, 0.1);
+    padding: 4px 8px;
+    border-radius: 3px;
+    border-left: 3px solid #9C27B0;
+} 

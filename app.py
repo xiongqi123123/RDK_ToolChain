@@ -8,6 +8,7 @@ from util.conversion import ConversionConfig, conversion_process
 from util.detection import DetectionConfig, detection_process
 from util.delete import DeleteConfig, delete_process
 from util.testing import TestingConfig, testing_process
+from util.board_monitor import board_monitor
 import threading
 import os
 from pathlib import Path
@@ -731,5 +732,129 @@ def api_stop_testing():
             'message': f'停止测试失败: {str(e)}'
         }), 500
 
+@app.route('/api/board-connect', methods=['POST'])
+def board_connect():
+    """连接到开发板"""
+    try:
+        print("收到开发板连接请求")
+        data = request.get_json()
+        
+        if not data:
+            print("请求数据为空")
+            return jsonify({
+                'status': 'error',
+                'message': '请求数据格式错误'
+            }), 400
+        
+        ip = data.get('ip', '').strip()
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+        port = int(data.get('port', 22))
+        
+        print(f"连接参数: ip={ip}, username={username}, port={port}")
+        
+        if not all([ip, username, password]):
+            print("连接参数不完整")
+            return jsonify({
+                'status': 'error',
+                'message': 'IP地址、用户名和密码不能为空'
+            }), 400
+        
+        # 检查是否为测试模式
+        test_only = data.get('test_only', False)
+        if test_only:
+            print("仅测试网络连通性...")
+            # 仅测试网络连通性
+            try:
+                import socket
+                socket.setdefaulttimeout(3)
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                result = sock.connect_ex((ip, port))
+                sock.close()
+                
+                if result == 0:
+                    return jsonify({
+                        'status': 'success',
+                        'message': f'网络连通性正常 ({ip}:{port})'
+                    })
+                else:
+                    return jsonify({
+                        'status': 'error',
+                        'message': f'无法连接到 {ip}:{port}，请检查网络和IP地址'
+                    })
+            except Exception as e:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'网络测试失败: {str(e)}'
+                })
+        
+        print("调用board_monitor.connect()...")
+        result = board_monitor.connect(ip, username, password, port)
+        print(f"连接结果: {result}")
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"API处理异常: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'status': 'error',
+            'message': f'连接失败: {str(e)}'
+        }), 500
+
+@app.route('/api/board-disconnect', methods=['POST'])
+def board_disconnect():
+    """断开开发板连接"""
+    try:
+        board_monitor.disconnect()
+        return jsonify({
+            'status': 'success',
+            'message': '已断开连接'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'断开连接失败: {str(e)}'
+        }), 500
+
+@app.route('/api/board-status')
+def board_status():
+    """获取开发板状态"""
+    try:
+        status = board_monitor.get_status()
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'获取状态失败: {str(e)}'
+        }), 500
+
+@app.route('/api/board-connection-info')
+def board_connection_info():
+    """获取开发板连接信息"""
+    try:
+        if board_monitor.connected:
+            # 获取设备信息
+            board_info = board_monitor._get_board_info()
+            board_info.update(board_monitor.device_info)
+            
+            return jsonify({
+                'status': 'connected',
+                'connection_info': board_monitor.connection_info,
+                'board_info': board_info,
+                'message': '已连接'
+            })
+        else:
+            return jsonify({
+                'status': 'disconnected',
+                'message': '未连接'
+            })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'获取连接信息失败: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
-    app.run(debug=True,port=5001)
+    app.run(debug=True, host='0.0.0.0', port=5000)
